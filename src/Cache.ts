@@ -1,4 +1,4 @@
-import { ApiResponse } from "./core/ApiResponse";
+import { ApiResponse } from "./ApiResponse";
 
 export interface ResponseCache {
     setValue(key: string, value: ApiResponse): void;
