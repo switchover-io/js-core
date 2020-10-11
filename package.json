@@ -1,7 +1,7 @@
 {
   "name": "switchover-js-core",
   "version": "0.0.8",
-  "description": "Swichover core library",
+  "description": "Switchover core library",
   "main": "dist/index.js",
   "files": [
     "dist"
@@ -11,7 +11,7 @@
     "build": "tsc"
   },
   "keywords": [],
-  "author": "Switchover",
+  "author": "switchover",
   "homepage": "https://switch-over.io",
   "license": "MIT",
   "devDependencies": {
