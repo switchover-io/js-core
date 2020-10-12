@@ -8,7 +8,8 @@
   ],
   "scripts": {
     "test": "jest",
-    "build": "tsc"
+    "build": "tsc",
+    "test-build": "npm run build && node test-dist.js"
   },
   "keywords": [],
   "author": "switchover",
