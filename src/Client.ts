@@ -70,18 +70,28 @@ export class Client {
     forceRefresh() {
 
         const { lastModified, payload } = this.cache.getValue(this.sdkKey);
+        const oldCacheResult = payload;
 
         this.fetcher.fetchAll(this.sdkKey, lastModified).then( result => {
 
-            if (result){ //TODO && result.lastModified !== lastModified) {
+            //check also the lastModified value 
+            if (result && result.lastModified !== lastModified) {
 
-                //check also the lastModified value 
+                //get changed toggles
+                /*
+                let changed = result.payload;
+                if (oldCacheResult) {
+                    changed = result.payload.filter( resultToggle => {
+                        const cachedToggle = oldCacheResult.find( ot => ot.uuid === resultToggle.uuid);
+                        return !cachedToggle || cachedToggle.
+                    })
+                } */
 
                 //fill cache
                 this.cache.setValue(this.sdkKey, result);
 
                 //emit loaded event
-                this.emitter.emit('updated');
+                this.emitter.emit('updated') //, changed);
             }
         }).catch(err => {
             this.logger.error(err);
