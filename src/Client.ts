@@ -5,6 +5,7 @@ import { Logger } from "./util/Logger";
 import { LogLevel } from "./util/LogLevel";
 import { ResponseCache } from './Cache';
 import { Evaluator } from "./Evaluator";
+import deepEqual = require('fast-deep-equal');
 
 export class Client {
 
@@ -57,7 +58,7 @@ export class Client {
         this.emitter.on('loaded', cb);
     }
 
-    onUpdated(cb: () => void) {
+    onUpdated(cb: (changed) => void) {
         this.emitter.on('updated', cb);
     }
 
@@ -65,6 +66,15 @@ export class Client {
         const { payload } = this.cache.getValue(this.sdkKey);
         return this.evaluator.evaluate(payload, name, context, defaultValue);
     }
+
+    /*
+    getValue(name:string, defaultValue) {
+        const { payload } = this.cache.getValue(this.sdkKey);
+        if (!payload) {
+            throw new Error('No features loaded! Did you wait for init?');
+        }
+        return payload.find( t => t.name === name)?.value;
+    }*/
 
 
     forceRefresh() {
@@ -78,20 +88,19 @@ export class Client {
             if (result && result.lastModified !== lastModified) {
 
                 //get changed toggles
-                /*
                 let changed = result.payload;
                 if (oldCacheResult) {
                     changed = result.payload.filter( resultToggle => {
-                        const cachedToggle = oldCacheResult.find( ot => ot.uuid === resultToggle.uuid);
-                        return !cachedToggle || cachedToggle.
-                    })
-                } */
+                        const cachedToggle = oldCacheResult.find( ot => ot.name === resultToggle.name);
+                        return !deepEqual(cachedToggle, resultToggle);
+                    });
+                } 
 
                 //fill cache
                 this.cache.setValue(this.sdkKey, result);
 
                 //emit loaded event
-                this.emitter.emit('updated') //, changed);
+                this.emitter.emit('updated', changed) //, changed);
             }
         }).catch(err => {
             this.logger.error(err);
