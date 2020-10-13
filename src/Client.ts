@@ -70,7 +70,7 @@ export class Client {
      * 
      * @param cb 
      */
-    onUpdated(cb: (changed) => void) {
+    onUpdated(cb: (keys: string[]) => void) {
         this.emitter.on('updated', cb);
     }
 
@@ -140,7 +140,7 @@ export class Client {
     initPolling() {
         if (this.options.autoRefresh) {
             this.logger.debug('Init AutoRefresh...')
-            let interval = this.options.refreshRate;
+            let interval = this.options.refreshInterval;
             if (!interval) {
                 this.logger.debug('AutoRefresh activated, no interval set, using default');
                 interval = 60;
