@@ -54,14 +54,36 @@ export class Client {
         this.initPolling();
     }
     
+    /**
+     * Loaded event will be triggered, after client was successfully initialized
+     * 
+     * @param cb 
+     */
     onLoaded(cb: () => void) {
         this.emitter.on('loaded', cb);
     }
 
+    /**
+     * Updated event will be triggered when toggles where changed and Auto-Refresh is enabled.
+     * 
+     * Manually calling forceRefresh() can also trigger the update event.
+     * 
+     * @param cb 
+     */
     onUpdated(cb: (changed) => void) {
         this.emitter.on('updated', cb);
     }
 
+
+    /**
+     * Evaluates a feature toggle with given name, returns the default value when evaluation 
+     * was not successfull.
+     *
+     * @param name 
+     * @param context 
+     * @param defaultValue 
+     * 
+     */
     active(name: string, context = null, defaultValue = false) {
         const { payload } = this.cache.getValue(this.sdkKey);
         return this.evaluator.evaluate(payload, name, context, defaultValue);
@@ -77,6 +99,10 @@ export class Client {
     }*/
 
 
+    /**
+     * Forces a refresh. This eventually can trigger an update event if toggles changed 
+     * or never been loaded to the cache.
+     */
     forceRefresh() {
 
         const { lastModified, payload } = this.cache.getValue(this.sdkKey);
@@ -88,12 +114,12 @@ export class Client {
             if (result && result.lastModified !== lastModified) {
 
                 //get changed toggles
-                let changed = result.payload;
+                let changed = result.payload.map(t => t.name);
                 if (oldCacheResult) {
                     changed = result.payload.filter( resultToggle => {
                         const cachedToggle = oldCacheResult.find( ot => ot.name === resultToggle.name);
                         return !deepEqual(cachedToggle, resultToggle);
-                    });
+                    }).map( t => t.name );
                 } 
 
                 //fill cache
@@ -108,6 +134,9 @@ export class Client {
         });
     }
 
+    /**
+     * (Re-) Starts auto refresh when you enabled the option.
+     */
     initPolling() {
         if (this.options.autoRefresh) {
             this.logger.debug('Init AutoRefresh...')
@@ -124,7 +153,9 @@ export class Client {
         }
     }
     
-
+    /**
+     * Stops auto-refresh. You can start againt with startPolling()
+     */
     stopPolling() {
         if (this.pollHandle) {
             this.logger.debug('Stop polling');
