@@ -11,7 +11,11 @@
     "build": "tsc",
     "test-build": "npm run build && node test-dist.js"
   },
-  "keywords": [],
+  "keywords": [ ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/switchover-io/js-core"
+  },
   "author": "switchover",
   "homepage": "https://switch-over.io",
   "license": "MIT",

@@ -1,7 +1,6 @@
 # Switchover SDK Core Library
 
 ![CI](https://github.com/switchover-io/js-core/workflows/CI/badge.svg)
-
 [![codecov](https://codecov.io/gh/switchover-io/js-core/branch/main/graph/badge.svg?token=tm31mHlRwo)](undefined)
 
 ## Switchover
