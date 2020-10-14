@@ -12,6 +12,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
@@ -25,6 +26,18 @@ jobs:
       # Runs a single command using the runners shell
       - name: Install
         run: npm install
-      
+
       - name: Build
         run: npm run test-build
+
+      - name: Test 
+        run: npm run test
+
+      - uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/clover.xml,./coverage/lcov.info
+
+    
+
+  
