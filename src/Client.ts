@@ -40,6 +40,8 @@ export class Client {
 
         this.logger.debug('created client, initaliziang...');
 
+        this.initOptionListeners();
+
         this.fetcher.fetchAll(this.sdkKey).then( apiResponse => {
             this.logger.debug('Fetch all config on client initialization');
 
@@ -54,12 +56,23 @@ export class Client {
         this.initPolling();
     }
     
+
+
+    private initOptionListeners() {
+        if (this.options.onInit) {
+            this.onInit(this.options.onInit);
+        }
+        if (this.options.onUpdate) {
+            this.onUpdate(this.options.onUpdate);
+        }
+    }
+
     /**
      * Loaded event will be triggered, after client was successfully initialized
      * 
      * @param cb 
      */
-    onLoaded(cb: () => void) {
+    onInit(cb: () => void) {
         this.emitter.on('loaded', cb);
     }
 
@@ -70,7 +83,7 @@ export class Client {
      * 
      * @param cb 
      */
-    onUpdated(cb: (keys: string[]) => void) {
+    onUpdate(cb: (keys: string[]) => void) {
         this.emitter.on('updated', cb);
     }
 
@@ -105,7 +118,10 @@ export class Client {
      */
     forceRefresh() {
 
-        const { lastModified, payload } = this.cache.getValue(this.sdkKey);
+        const { lastModified, payload } = this.cache.getValue(this.sdkKey) || {
+            lastModified: null,
+            payload: null
+        };
         const oldCacheResult = payload;
 
         this.fetcher.fetchAll(this.sdkKey, lastModified).then( result => {
@@ -162,5 +178,17 @@ export class Client {
             clearInterval(this.pollHandle);
         }
     }
+
+    /**
+     * Get all toggle keys, which currently loaded
+     */
+    getToggleKeys() {
+        const cachedResponse = this.cache.getValue(this.sdkKey);
+        if (cachedResponse && cachedResponse.payload) {
+            return cachedResponse.payload.map( t => t.name);
+        }
+        return [];
+    }
+
 
 }

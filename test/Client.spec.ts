@@ -7,24 +7,28 @@ import { Fetcher } from '../src/Fetcher';
 import { mocked } from 'ts-jest/utils'
 import { ApiResponse } from '../src/ApiResponse';
 
+const mockFetcher = {
+    fetchAll: jest.fn()
+} 
+
+const response1:ApiResponse = {
+    lastModified: '1',
+    payload: [{
+        name: "toggle1",
+        status: "4", 
+        strategy: "3",
+        conditions: []
+    }]
+};
+
+beforeEach(()=> {
+    mockFetcher.fetchAll.mockClear();
+})
+
 
 test('Test forceRefresh with changed nothing', async () => {
 
     const sdkKey = 'some_key'
-
-    const mockFetcher = {
-        fetchAll: jest.fn()
-    } 
-
-    const response1:ApiResponse = {
-        lastModified: '1',
-        payload: [{
-            name: "toggle1",
-            status: "4", 
-            strategy: "3",
-            conditions: []
-        }]
-    };
 
     mockFetcher.fetchAll.mockImplementation( () => Promise.resolve(response1));
 
@@ -41,29 +45,53 @@ test('Test forceRefresh with changed nothing', async () => {
     expect(cache.getValue(sdkKey).lastModified).toEqual(response1.lastModified);
 
 
-    client.onUpdated( (changed) => {
+    client.onUpdate( (changed) => {
         expect(changed).toBeNull();
     })
 
     client.forceRefresh()
 });
 
-test('Test forceRefresh with one new toggle', async () => {
+test('Test onInit handler on client creation', async () => {
     const sdkKey = 'some_key'
 
-    const mockFetcher = {
-        fetchAll: jest.fn()
-    } 
+    mockFetcher.fetchAll.mockImplementation( () => Promise.resolve(response1));
 
-    const response1:ApiResponse = {
-        lastModified: '1',
-        payload: [{
-            name: "toggle1",
-            status: "4", 
-            strategy: "3",
-            conditions: []
-        }]
-    };
+    const client = new Client(
+        new Evaluator(), 
+        new EventEmitter(),
+        new MemoryCache(), 
+        mockFetcher, 
+        sdkKey, 
+        { autoRefresh: false, 
+            onInit: () => { expect(client.getToggleKeys()).toHaveLength(1) }  }, 
+        'info');
+
+    await client;
+})
+
+test('Test onUpdate handler on client creation', async () => {
+    const sdkKey = 'some_key'
+
+    mockFetcher.fetchAll.mockImplementation( () => Promise.resolve(response1));
+
+    const client = new Client(
+        new Evaluator(), 
+        new EventEmitter(),
+        new MemoryCache(), 
+        mockFetcher, 
+        sdkKey, 
+        { autoRefresh: false, 
+            onUpdate: () => { expect(client.getToggleKeys()).toHaveLength(1) }  }, 
+        'info');
+
+    client.forceRefresh();
+
+})
+
+
+test('Test forceRefresh with one new toggle', async () => {
+    const sdkKey = 'some_key'
 
     mockFetcher.fetchAll.mockImplementationOnce( () => Promise.resolve(response1));
 
@@ -95,7 +123,7 @@ test('Test forceRefresh with one new toggle', async () => {
     }
     mockFetcher.fetchAll.mockImplementationOnce( () => Promise.resolve(response2));
 
-    client.onUpdated( (changed) => {
+    client.onUpdate( (changed) => {
         expect(changed).toHaveLength(1);
         expect(changed[0]).toEqual('toggle2');
     })
@@ -103,4 +131,6 @@ test('Test forceRefresh with one new toggle', async () => {
     client.forceRefresh()
 
 })
+
+
 
