@@ -25,8 +25,8 @@ export class Client {
             emitter: Emitter,
             cache: ResponseCache,
             fetcher: Fetcher,
-            sdkKey: string, 
-            options: Options, 
+            sdkKey: string,
+            options: Options,
             level: LogLevel) {
 
         this.evaluator = evaluator;
@@ -51,7 +51,7 @@ export class Client {
             this.emitter.emit('loaded');
 
             this.logger.debug('Loaded config');
-        } )
+        })
 
         this.initPolling();
     }
@@ -78,10 +78,10 @@ export class Client {
 
     /**
      * Updated event will be triggered when toggles where changed and Auto-Refresh is enabled.
-     * 
+     *
      * Manually calling forceRefresh() can also trigger the update event.
-     * 
-     * @param cb 
+     *
+     * @param cb
      */
     onUpdate(cb: (keys: string[]) => void) {
         this.emitter.on('updated', cb);
@@ -89,13 +89,13 @@ export class Client {
 
 
     /**
-     * Evaluates a feature toggle with given name, returns the default value when evaluation 
+     * Evaluates a feature toggle with given name, returns the default value when evaluation
      * was not successfull.
      *
-     * @param name 
-     * @param context 
-     * @param defaultValue 
-     * 
+     * @param name
+     * @param context
+     * @param defaultValue
+     *
      */
     active(name: string, context = null, defaultValue = false) {
         const { payload } = this.cache.getValue(this.sdkKey);
@@ -113,7 +113,7 @@ export class Client {
 
 
     /**
-     * Forces a refresh. This eventually can trigger an update event if toggles changed 
+     * Forces a refresh. This eventually can trigger an update event if toggles changed
      * or never been loaded to the cache.
      */
     forceRefresh() {
@@ -126,7 +126,7 @@ export class Client {
 
         this.fetcher.fetchAll(this.sdkKey, lastModified).then( result => {
 
-            //check also the lastModified value 
+            //check also the lastModified value
             if (result && result.lastModified !== lastModified) {
 
                 //get changed toggles
@@ -136,7 +136,7 @@ export class Client {
                         const cachedToggle = oldCacheResult.find( ot => ot.name === resultToggle.name);
                         return !deepEqual(cachedToggle, resultToggle);
                     }).map( t => t.name );
-                } 
+                }
 
                 //fill cache
                 this.cache.setValue(this.sdkKey, result);
