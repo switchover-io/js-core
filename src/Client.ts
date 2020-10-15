@@ -6,6 +6,7 @@ import { LogLevel } from "./util/LogLevel";
 import { ResponseCache } from './Cache';
 import { Evaluator } from "./Evaluator";
 import deepEqual = require('fast-deep-equal');
+import { ApiResponse } from "./ApiResponse";
 
 export class Client {
 
@@ -55,6 +56,7 @@ export class Client {
 
         this.initPolling();
     }
+    
     
 
 
@@ -130,13 +132,7 @@ export class Client {
             if (result && result.lastModified !== lastModified) {
 
                 //get changed toggles
-                let changed = result.payload.map(t => t.name);
-                if (oldCacheResult) {
-                    changed = result.payload.filter( resultToggle => {
-                        const cachedToggle = oldCacheResult.find( ot => ot.name === resultToggle.name);
-                        return !deepEqual(cachedToggle, resultToggle);
-                    }).map( t => t.name );
-                }
+                let changed = this.getChangedKeys(result, oldCacheResult);
 
                 //fill cache
                 this.cache.setValue(this.sdkKey, result);
@@ -148,6 +144,16 @@ export class Client {
             this.logger.error(err);
             this.logger.error(`Failed to load. Server sent ${err.status} ${err.text}`);
         });
+    }
+
+    private getChangedKeys(result: ApiResponse, oldCacheResult: any) {
+        if (oldCacheResult) {
+            return result.payload.filter( resultToggle => {
+                const cachedToggle = oldCacheResult.find( ot => ot.name === resultToggle.name);
+                return !deepEqual(cachedToggle, resultToggle);
+            }).map( t => t.name );
+        }
+        return result.payload.map(t => t.name);
     }
 
     /**
@@ -184,10 +190,14 @@ export class Client {
      */
     getToggleKeys() {
         const cachedResponse = this.cache.getValue(this.sdkKey);
-        if (cachedResponse && cachedResponse.payload) {
+        if (this.hasCachedResonse(cachedResponse)) {
             return cachedResponse.payload.map( t => t.name);
         }
         return [];
+    }
+
+    private hasCachedResonse(response: ApiResponse) {
+        return response && response.payload;
     }
 
 
