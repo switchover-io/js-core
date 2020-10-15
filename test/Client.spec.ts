@@ -9,13 +9,13 @@ import { ApiResponse } from '../src/ApiResponse';
 
 const mockFetcher = {
     fetchAll: jest.fn()
-} 
+}
 
 const response1:ApiResponse = {
     lastModified: '1',
     payload: [{
         name: "toggle1",
-        status: "4", 
+        status: "4",
         strategy: "3",
         conditions: []
     }]
@@ -34,9 +34,9 @@ test('Test forceRefresh with changed nothing', async () => {
 
     const cache = new MemoryCache();
     const client = new Client(
-            new Evaluator(), 
+            new Evaluator(),
             new EventEmitter(),
-            cache, mockFetcher, 
+            cache, mockFetcher,
             sdkKey, { autoRefresh: false }, 'info');
 
     await client;
@@ -58,12 +58,12 @@ test('Test onInit handler on client creation', async () => {
     mockFetcher.fetchAll.mockImplementation( () => Promise.resolve(response1));
 
     const client = new Client(
-        new Evaluator(), 
+        new Evaluator(),
         new EventEmitter(),
-        new MemoryCache(), 
-        mockFetcher, 
-        sdkKey, 
-        { autoRefresh: false, 
+        new MemoryCache(),
+        mockFetcher,
+        sdkKey,
+        { autoRefresh: false,
             onInit: () => { expect(client.getToggleKeys()).toHaveLength(1) }  }, 
         'info');
 
@@ -76,12 +76,12 @@ test('Test onUpdate handler on client creation', async () => {
     mockFetcher.fetchAll.mockImplementation( () => Promise.resolve(response1));
 
     const client = new Client(
-        new Evaluator(), 
+        new Evaluator(),
         new EventEmitter(),
-        new MemoryCache(), 
-        mockFetcher, 
-        sdkKey, 
-        { autoRefresh: false, 
+        new MemoryCache(),
+        mockFetcher,
+        sdkKey,
+        { autoRefresh: false,
             onUpdate: () => { expect(client.getToggleKeys()).toHaveLength(1) }  }, 
         'info');
 
@@ -96,10 +96,10 @@ test('Test forceRefresh with one new toggle', async () => {
     mockFetcher.fetchAll.mockImplementationOnce( () => Promise.resolve(response1));
 
     const client = new Client(
-        new Evaluator(), 
+        new Evaluator(),
         new EventEmitter(),
-        new MemoryCache(), 
-        mockFetcher, 
+        new MemoryCache(),
+        mockFetcher,
         sdkKey, { autoRefresh: false }, 'info');
 
     await client;
@@ -110,13 +110,13 @@ test('Test forceRefresh with one new toggle', async () => {
         payload: [
             {
                 name: "toggle1",
-                status: "4", 
+                status: "4",
                 strategy: "3",
                 conditions: []
             },
             {
             name: "toggle2",
-            status: "4", 
+            status: "4",
             strategy: "3",
             conditions: []
         }]
