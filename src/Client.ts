@@ -100,7 +100,7 @@ export class Client {
      *
      */
     active(name: string, context = null, defaultValue = false) {
-        const { payload } = this.cache.getValue(this.sdkKey);
+        const { payload } = this.cache.getValue(this.sdkKey) || { lastModified: null, payload: null };
         return this.evaluator.evaluate(payload, name, context, defaultValue);
     }
 
