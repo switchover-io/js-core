@@ -6,6 +6,7 @@ import { ResponseCache } from '../src/Cache';
 import { Fetcher } from '../src/Fetcher';
 import { mocked } from 'ts-jest/utils'
 import { ApiResponse } from '../src/ApiResponse';
+import { OperationCanceledException } from 'typescript';
 
 const mockFetcher = {
     fetchAll: jest.fn()
@@ -133,4 +134,18 @@ test('Test forceRefresh with one new toggle', async () => {
 })
 
 
+test('Client.active should return false if not init', () => {
+    const sdkKey = 'some_key'
+
+    mockFetcher.fetchAll.mockImplementationOnce( () => Promise.resolve(response1));
+
+    const client = new Client(
+        new Evaluator(),
+        new EventEmitter(),
+        new MemoryCache(),
+        mockFetcher,
+        sdkKey, { autoRefresh: false }, 'info');
+
+    expect(client.active('toggle1', false)).toBeFalsy();
+})
 
