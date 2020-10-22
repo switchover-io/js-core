@@ -6,7 +6,9 @@ import { ResponseCache } from '../src/Cache';
 import { Fetcher } from '../src/Fetcher';
 import { mocked } from 'ts-jest/utils'
 import { ApiResponse } from '../src/ApiResponse';
-import { OperationCanceledException } from 'typescript';
+import equal from 'fast-deep-equal';
+
+
 
 const mockFetcher = {
     fetchAll: jest.fn()
@@ -150,3 +152,11 @@ test('Client.active should return default value if not init', () => {
     expect(client.toggleValue('toggle29391', false)).toBeFalsy();
 })
 
+
+test('test deepEqual', () =>{
+    const deepEqual = equal;
+
+    const result =  deepEqual({a: 1}, {a: 1});
+
+    expect(result).toBeTruthy();
+});
