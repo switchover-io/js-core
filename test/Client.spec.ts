@@ -134,7 +134,7 @@ test('Test forceRefresh with one new toggle', async () => {
 })
 
 
-test('Client.active should return false if not init', () => {
+test('Client.active should return default value if not init', () => {
     const sdkKey = 'some_key'
 
     mockFetcher.fetchAll.mockImplementationOnce( () => Promise.resolve(response1));
@@ -146,6 +146,7 @@ test('Client.active should return false if not init', () => {
         mockFetcher,
         sdkKey, { autoRefresh: false }, 'info');
 
-    expect(client.active('toggle1', false)).toBeFalsy();
+    expect(client.toggleValue('toggle1', true)).toBeTruthy();
+    expect(client.toggleValue('toggle29391', false)).toBeFalsy();
 })
 

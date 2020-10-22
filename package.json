@@ -1,6 +1,6 @@
 {
   "name": "switchover-js-core",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "Switchover core library",
   "main": "dist/index.js",
   "files": [

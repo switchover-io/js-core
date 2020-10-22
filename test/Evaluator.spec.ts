@@ -2,7 +2,8 @@ import { Evaluator } from "../src/Evaluator"
 
 const config = [{
     name: "toggle-001",
-    status: 2,
+    status: 1,
+    value: true,
     strategy: 3,
     conditions: [{
         key: 'key01',
@@ -21,14 +22,18 @@ const config = [{
 }];
 
 
-test('test evaluation always active', () => {
+test('test evaluation active without conditions', () => {
     const evaluator = new Evaluator();
-
 
     const context = {
         "otherKey01" : "aValue001"
     }
-    expect(evaluator.evaluate(config, 'toggle-001', context, false))
+
+    const testConfig = [
+        Object.assign(config[0], { conditions: []})
+    ] 
+
+    expect(evaluator.evaluate(testConfig, 'toggle-001', context, false))
         .toBeTruthy();
 })
 
@@ -44,6 +49,8 @@ test('test evaluation always inactive', () => {
     ] 
 
     expect(evaluator.evaluate(testConfig, 'toggle-001', context, true))
+        .toBeTruthy();
+        expect(evaluator.evaluate(testConfig, 'toggle-001', context, false))
         .toBeFalsy();
 })
 
@@ -73,11 +80,27 @@ test('test evaluation strategy at least one conditions true', () => {
     }
 
     const testConfig = [
-        Object.assign(config[0], { status: 1, strategy: 1 }) // STRATEGY_ATLEASTONE
+        Object.assign(config[0], 
+        {   status: 1, 
+            strategy: 1, 
+            conditions: [{
+            key: 'key01',
+            operator: {
+                name: 'equal',
+                value: 'aValue002'
+            },
+        },
+        {
+            key: 'key02',
+            operator: {
+                name: 'equal',
+                value: 'some_OtherValue'
+            }
+        }]}) // STRATEGY_ATLEASTONE
     ] 
 
-    expect(evaluator.evaluate(testConfig, 'toggle-001', context, true)).toBeTruthy();
-    expect(evaluator.evaluate(testConfig, 'toggle-001', { "key01" : "no_condition_fullfilled"}, true)).toBeFalsy();
+    expect(evaluator.evaluate(testConfig, 'toggle-001', context, false)).toBeTruthy();
+    expect(evaluator.evaluate(testConfig, 'toggle-001', { "key01" : "no_condition_fullfilled"}, false)).toBeFalsy();
 })
 
 test('test evaluation strategy majority of conditions are true', () => {
@@ -91,6 +114,7 @@ test('test evaluation strategy majority of conditions are true', () => {
 
     const majorityConfig = [{
         name: "toggle-001",
+        value: true,
         status: 1,
         strategy: 2, //STRATEGY_MAJORITY (= >50%)
         conditions: [{

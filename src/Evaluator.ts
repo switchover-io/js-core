@@ -2,8 +2,8 @@ import { Logger } from "./util/Logger";
 import { Condition, satisfies } from "./operators";
 
 
-const ACTIVE = 2;
-const CONDITIONALLY_ACTIVE = 1;
+const ACTIVE = 1;
+//const CONDITIONALLY_ACTIVE = 1;
 const INACTIVE = 4;
 
 const STRATEGY_ATLEASTONE = 1;
@@ -17,6 +17,10 @@ export class Evaluator {
     public evaluate(config: any, name: string, context: any, defaultValue: boolean) :boolean {
         this.logger.debug('Evalutate config for toggle ' + name);
 
+        if (!config) {
+            this.logger.error("Toggle config is empty! Did you wait for init? All toggles will return default value");
+        }
+
         let toggle = this.findByName(config, name);
         if (toggle) {
 
@@ -27,11 +31,9 @@ export class Evaluator {
             //check conditions on given context
             switch (status) {
                 case ACTIVE:
-                    return true;
-                case CONDITIONALLY_ACTIVE:
-                    return this.evaluateWithConditions(toggle, context);
+                    return this.evaluateOnActive(toggle, context, defaultValue);    
                 case INACTIVE:
-                    return false;
+                    return defaultValue;
             }
 
         }
@@ -40,12 +42,22 @@ export class Evaluator {
         return defaultValue;
     }
 
-    private evaluateWithConditions(toggle, context) : boolean {
+    private evaluateOnActive(toggle, context, defaultValue) {
+        if (this.hasConditions(toggle)) {
+            return this.evaluateWithConditions(toggle, context, defaultValue);
+        }
+        return toggle.value;
+    }
+
+    private hasConditions(toggle) {
+        return toggle.conditions &&  toggle.conditions.length > 0;
+    }
+
+    private evaluateWithConditions(toggle, context, defaultValue) : boolean {
         this.logger.debug('Evaluate toggle with conditions');
     
-        if (!context && toggle.conditions 
-            && toggle.conditions.length > 0 ) {
-            return false;
+        if (!context && this.hasConditions(toggle) ) {
+            return defaultValue
         }
     
         const strategy = parseInt(toggle.strategy);
@@ -55,11 +67,11 @@ export class Evaluator {
         //TODO Check according evaluation strategy
         switch(strategy) {
             case STRATEGY_ALL:
-                return this.evaluateAll(toggle, context);
+                return this.evaluateAll(toggle, context) ? toggle.value : defaultValue;
             case STRATEGY_ATLEASTONE:
-                return this.evaluateAtLeastOne(toggle, context);
+                return this.evaluateAtLeastOne(toggle, context) ? toggle.value : defaultValue;
             case STRATEGY_MAJORITY:
-                return this.evaluateMajority(toggle, context);
+                return this.evaluateMajority(toggle, context) ? toggle.value : defaultValue;
         }
     
         throw new Error('No toggle.strategy given!');

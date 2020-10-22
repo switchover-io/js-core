@@ -89,17 +89,18 @@ export class Client {
         this.emitter.on('updated', cb);
     }
 
-
     /**
-     * Evaluates a feature toggle with given name, returns the default value when evaluation
-     * was not successfull.
+     * Returns a toggle value by given namen. If evalution fails / was not successfull it will
+     * return the given default value
      *
+     * Context can hold properties which want to be evaluated against conditions if you have any set. 
+     * 
      * @param name
      * @param context
      * @param defaultValue
      *
      */
-    active(name: string, context = null, defaultValue = false) {
+    toggleValue(name: string, defaultValue, context = {}) {
         const { payload } = this.cache.getValue(this.sdkKey) || { lastModified: null, payload: null };
         return this.evaluator.evaluate(payload, name, context, defaultValue);
     }
