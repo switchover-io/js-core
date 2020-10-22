@@ -90,9 +90,9 @@ export class Client {
     }
 
     /**
-     * Returns a toggle value by given namen. 
+     * Returns a toggle value by given namen.
      *
-     * It will return the given default value: 
+     * It will return the given default value:
      * - When toggle is INACTIVE
      * - When evalution fails
      * - When client was not fully initialized
