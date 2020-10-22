@@ -5,7 +5,8 @@
       "target": "ES5",
       "module": "CommonJS",
       "sourceMap": false,
-      "declaration": true
+      "declaration": true,
+      "declarationMap": true
     },
     "include": [
       "src/**/*.ts"

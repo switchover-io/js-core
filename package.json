@@ -1,14 +1,15 @@
 {
   "name": "switchover-js-core",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "Switchover core library",
   "main": "dist/index.js",
+  "module": "dist/esm/index.js",
   "files": [
     "dist"
   ],
   "scripts": {
     "test": "jest",
-    "build": "tsc",
+    "build": "tsc && tsc -p  tsconfig.esm.json",
     "test-build": "npm run build && node test-dist.js"
   },
   "keywords": [ ],

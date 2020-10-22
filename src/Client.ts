@@ -5,7 +5,7 @@ import { Logger } from "./util/Logger";
 import { LogLevel } from "./util/LogLevel";
 import { ResponseCache } from './Cache';
 import { Evaluator } from "./Evaluator";
-import deepEqual = require('fast-deep-equal');
+import * as deepEqual from 'fast-deep-equal';
 import { ApiResponse } from "./ApiResponse";
 
 export class Client {
