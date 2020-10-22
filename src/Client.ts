@@ -5,9 +5,10 @@ import { Logger } from "./util/Logger";
 import { LogLevel } from "./util/LogLevel";
 import { ResponseCache } from './Cache';
 import { Evaluator } from "./Evaluator";
-const deepEqual = require('fast-deep-equal');
+import * as equal  from 'fast-deep-equal';
 import { ApiResponse } from "./ApiResponse";
 
+const deepEqual = equal;
 export class Client {
 
     private logger: Logger;
