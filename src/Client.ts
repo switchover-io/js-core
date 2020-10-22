@@ -90,11 +90,15 @@ export class Client {
     }
 
     /**
-     * Returns a toggle value by given namen. If evalution fails / was not successfull it will
-     * return the given default value
+     * Returns a toggle value by given namen. 
      *
-     * Context can hold properties which want to be evaluated against conditions if you have any set. 
-     * 
+     * It will return the given default value: 
+     * - When toggle is INACTIVE
+     * - When evalution fails
+     * - When client was not fully initialized
+     *
+     * Context can hold properties which want to be evaluated against conditions if you have any set.
+     *
      * @param name
      * @param context
      * @param defaultValue

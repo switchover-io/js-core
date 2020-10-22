@@ -31,7 +31,7 @@ export class Evaluator {
             //check conditions on given context
             switch (status) {
                 case ACTIVE:
-                    return this.evaluateOnActive(toggle, context, defaultValue);    
+                    return this.evaluateOnActive(toggle, context, defaultValue); 
                 case INACTIVE:
                     return defaultValue;
             }

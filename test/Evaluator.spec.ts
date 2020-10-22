@@ -80,9 +80,9 @@ test('test evaluation strategy at least one conditions true', () => {
     }
 
     const testConfig = [
-        Object.assign(config[0], 
-        {   status: 1, 
-            strategy: 1, 
+        Object.assign(config[0],
+        {   status: 1,
+            strategy: 1,
             conditions: [{
             key: 'key01',
             operator: {
@@ -97,7 +97,7 @@ test('test evaluation strategy at least one conditions true', () => {
                 value: 'some_OtherValue'
             }
         }]}) // STRATEGY_ATLEASTONE
-    ] 
+    ];
 
     expect(evaluator.evaluate(testConfig, 'toggle-001', context, false)).toBeTruthy();
     expect(evaluator.evaluate(testConfig, 'toggle-001', { "key01" : "no_condition_fullfilled"}, false)).toBeFalsy();
