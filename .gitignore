@@ -3,3 +3,4 @@ dist-browser/
 dist-core/
 node_modules/
 coverage/
+esm/
