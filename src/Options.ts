@@ -1,6 +1,6 @@
 export interface Options {
     autoRefresh?: boolean;
     refreshInterval?: number;
-    onInit?: () => void;
+    /** @deprecated */onInit?: () => void;
     onUpdate?: (key: string[]) => void;
 }

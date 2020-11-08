@@ -40,10 +40,11 @@ export class Client {
 
         this.logger = Logger.createLogger(level);
 
-        this.logger.debug('created client, initaliziang...');
-
+        this.logger.debug('Created client');
+        
         this.initOptionListeners();
 
+        /*
         this.fetcher.fetchAll(this.sdkKey).then( apiResponse => {
             this.logger.debug('Fetch all config on client initialization');
 
@@ -53,12 +54,34 @@ export class Client {
             this.emitter.emit('loaded');
 
             this.logger.debug('Loaded config');
-        })
+        })*/
 
         this.initPolling();
     }
-    
-    
+
+    /**
+     * Fetches all toggles from server or cache. Callback will be triggerd when fetching is done.
+     * 
+     * @param cb 
+     */
+    fetch(cb: () => void) {
+        if (!this.cache.getValue(this.sdkKey)) {
+            this.fetcher.fetchAll(this.sdkKey).then(apiResponse => {
+                this.logger.debug('Fetch all config on client initialization');
+
+                //fill cache
+                this.cache.setValue(this.sdkKey, apiResponse);
+
+                this.logger.debug('Loaded config');
+
+                cb();
+            });
+        } else {
+            this.logger.debug('Fetched from cache');
+            cb();
+        }
+    }
+
 
 
     private initOptionListeners() {
@@ -72,7 +95,7 @@ export class Client {
 
     /**
      * Loaded event will be triggered, after client was successfully initialized
-     * 
+     * @deprecated
      * @param cb 
      */
     onInit(cb: () => void) {
@@ -109,16 +132,6 @@ export class Client {
         const { payload } = this.cache.getValue(this.sdkKey) || { lastModified: null, payload: null };
         return this.evaluator.evaluate(payload, name, context, defaultValue);
     }
-
-    /*
-    getValue(name:string, defaultValue) {
-        const { payload } = this.cache.getValue(this.sdkKey);
-        if (!payload) {
-            throw new Error('No features loaded! Did you wait for init?');
-        }
-        return payload.find( t => t.name === name)?.value;
-    }*/
-
 
     /**
      * Forces a refresh. This eventually can trigger an update event if toggles changed
