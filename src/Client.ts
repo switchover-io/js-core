@@ -47,6 +47,9 @@ export class Client {
         this.initPolling();
     }
 
+    /**
+     * Indicates if cached is filled, e.g after first fetch
+     */
     isCacheFilled() {
         const response = this.cache.getValue(this.sdkKey);
         return response != null;
@@ -54,7 +57,7 @@ export class Client {
 
 
     /**
-     * Fetches all toggles from server or cache. Callback will be triggerd when fetching is done.
+     * Initially Fetches all toggles from server and then fetch from cache. Callback will be triggerd when fetching is done.
      * 
      * @param cb 
      */
@@ -80,13 +83,11 @@ export class Client {
     /**
      * Fetch as promise
      */
-    fetchPromise() : Promise<void> {
+    fetchAsync() : Promise<void> {
         return new Promise( (resolve, _) => {
             this.fetch( () => resolve() );
         })
     }
-
-
 
     private initOptionListeners() {
         if (this.options.onUpdate) {
@@ -94,19 +95,9 @@ export class Client {
         }
     }
 
-    /**
-     * Loaded event will be triggered, after client was successfully initialized
-     * @deprecated
-     * @param cb 
-     */
-    onInit(cb: () => void) {
-        this.emitter.on('loaded', cb);
-    }
 
     /**
      * Updated event will be triggered when toggles where changed and Auto-Refresh is enabled.
-     *
-     * Manually calling forceRefresh() can also trigger the update event.
      *
      * @param cb
      */
@@ -135,11 +126,25 @@ export class Client {
     }
 
     /**
-     * Forces a refresh. This eventually can trigger an update event if toggles changed
-     * or never been loaded to the cache.
+     * Manually refreshes toggles. If toggles were updated, callback will hold the changed toggle keys.
+     * If nothing has changed, keys are null.
+     *
+     * @param cb 
      */
-    forceRefresh() {
+    refresh(cb: (keys: string[]) => void) {
+        this.doRefresh(cb);
+    }
 
+    /**
+     * Refreshes async
+     */
+    refreshAsync() : Promise<string[]> {
+        return new Promise( (resolve, _) => {
+            this.doRefresh( keys => resolve(keys) )
+        });
+    }
+
+    private doRefresh(cb: (keys: string[]) => void) {
         const { lastModified, payload } = this.cache.getValue(this.sdkKey) || {
             lastModified: null,
             payload: null
@@ -157,8 +162,42 @@ export class Client {
                 //fill cache
                 this.cache.setValue(this.sdkKey, result);
 
-                //emit loaded event
-                this.emitter.emit('updated', changed) //, changed);
+                cb(changed);
+            } else {
+                cb(null);
+            }
+        }).catch(err => {
+            this.logger.error(err);
+            this.logger.error(`Failed to load. Server sent ${err.status} ${err.text}`);
+            cb(null);
+        });
+    }
+
+    /**
+     * Forces a refresh. This eventually can trigger an update event if toggles changed
+     * or never been loaded to the cache.
+     * 
+     * @deprecated
+     */
+    forceRefresh() {
+        const { lastModified, payload } = this.cache.getValue(this.sdkKey) || {
+            lastModified: null,
+            payload: null
+        };
+        const oldCacheResult = payload;
+
+        this.fetcher.fetchAll(this.sdkKey, lastModified).then( result => {
+
+            //check also the lastModified value
+            if (result && result.lastModified !== lastModified) {
+
+                //get changed toggles
+                let changed = this.getChangedKeys(result, oldCacheResult);
+
+                //fill cache
+                this.cache.setValue(this.sdkKey, result);
+
+                
             }
         }).catch(err => {
             this.logger.error(err);
@@ -183,16 +222,24 @@ export class Client {
         if (this.options.autoRefresh) {
             this.logger.debug('Init AutoRefresh...')
             let interval = this.options.refreshInterval;
-            if (!interval || interval < 10) {
-                this.logger.debug('AutoRefresh activated, no interval set or is below 10sec, using default');
+            if (!interval) {
+                this.logger.debug('AutoRefresh activated using default');
                 interval = 60;
             }
             this.logger.debug('Init polling with interval=' + interval);
             this.pollHandle = setInterval(() => {
-                this.forceRefresh();
+                this.pollAndNotifyOnUpdates();
             }, interval * 1000);
-
         }
+    }
+
+    private pollAndNotifyOnUpdates() {
+        this.doRefresh((changedKeys) => {
+            if (changedKeys) {
+                //emit loaded event
+                this.emitter.emit('updated', changedKeys) //, changed);
+            }
+        });
     }
     
     /**
