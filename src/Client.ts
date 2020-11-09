@@ -183,8 +183,8 @@ export class Client {
         if (this.options.autoRefresh) {
             this.logger.debug('Init AutoRefresh...')
             let interval = this.options.refreshInterval;
-            if (!interval) {
-                this.logger.debug('AutoRefresh activated, no interval set, using default');
+            if (!interval || interval < 10) {
+                this.logger.debug('AutoRefresh activated, no interval set or is below 10sec, using default');
                 interval = 60;
             }
             this.logger.debug('Init polling with interval=' + interval);

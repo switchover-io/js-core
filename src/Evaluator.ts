@@ -14,7 +14,7 @@ export class Evaluator {
 
     private logger: Logger = Logger.getLogger();
 
-    public evaluate(config: any, name: string, context: any, defaultValue: boolean) :boolean {
+    public evaluate(config: any, name: string, context: any, defaultValue: any){
         this.logger.debug('Evalutate config for toggle ' + name);
 
         if (!config) {
@@ -42,7 +42,7 @@ export class Evaluator {
         return defaultValue;
     }
 
-    private evaluateOnActive(toggle, context, defaultValue) {
+    private evaluateOnActive(toggle, context, defaultValue: any) {
         if (this.hasConditions(toggle)) {
             return this.evaluateWithConditions(toggle, context, defaultValue);
         }
@@ -53,7 +53,7 @@ export class Evaluator {
         return toggle.conditions &&  toggle.conditions.length > 0;
     }
 
-    private evaluateWithConditions(toggle, context, defaultValue) : boolean {
+    private evaluateWithConditions(toggle, context, defaultValue) {
         this.logger.debug('Evaluate toggle with conditions');
     
         if (!context && this.hasConditions(toggle) ) {
