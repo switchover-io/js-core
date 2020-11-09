@@ -56,6 +56,24 @@ test('Test fetch', done => {
       
 });
 
+test('Test fetchPromise', async () => {
+    const sdkKey = 'some_key'
+
+    mockFetcher.fetchAll.mockImplementation( () => Promise.resolve(response1));
+
+    const cache = new MemoryCache();
+    const client = new Client(
+            new Evaluator(),
+            new EventEmitter(),
+            cache, mockFetcher,
+            sdkKey, { autoRefresh: false }, 'info');
+
+    await client.fetchPromise();
+
+    expect(mockFetcher.fetchAll).toBeCalledTimes(1);
+    expect(cache.getValue(sdkKey).lastModified).toEqual(response1.lastModified);
+})
+
 test('Test isCachedFilled', done => {
     const sdkKey = 'some_key'
 

@@ -77,6 +77,16 @@ export class Client {
     }
 
 
+    /**
+     * Fetch as promise
+     */
+    fetchPromise() : Promise<void> {
+        return new Promise( (resolve, _) => {
+            this.fetch( () => resolve() );
+        })
+    }
+
+
 
     private initOptionListeners() {
         if (this.options.onUpdate) {
