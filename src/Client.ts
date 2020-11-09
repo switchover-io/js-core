@@ -173,38 +173,6 @@ export class Client {
         });
     }
 
-    /**
-     * Forces a refresh. This eventually can trigger an update event if toggles changed
-     * or never been loaded to the cache.
-     * 
-     * @deprecated
-     */
-    forceRefresh() {
-        const { lastModified, payload } = this.cache.getValue(this.sdkKey) || {
-            lastModified: null,
-            payload: null
-        };
-        const oldCacheResult = payload;
-
-        this.fetcher.fetchAll(this.sdkKey, lastModified).then( result => {
-
-            //check also the lastModified value
-            if (result && result.lastModified !== lastModified) {
-
-                //get changed toggles
-                let changed = this.getChangedKeys(result, oldCacheResult);
-
-                //fill cache
-                this.cache.setValue(this.sdkKey, result);
-
-                
-            }
-        }).catch(err => {
-            this.logger.error(err);
-            this.logger.error(`Failed to load. Server sent ${err.status} ${err.text}`);
-        });
-    }
-
     private getChangedKeys(result: ApiResponse, oldCacheResult: any) {
         if (oldCacheResult) {
             return result.payload.filter( resultToggle => {
