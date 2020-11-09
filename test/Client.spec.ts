@@ -85,7 +85,7 @@ test('Test isCachedFilled', done => {
         new MemoryCache(),
         mockFetcher,
         sdkKey,
-        { autoRefresh: false }, 
+        { autoRefresh: false },
         'info');
 
     expect(client.isCacheFilled()).toBeFalsy();
@@ -126,10 +126,10 @@ test('Test onUpdate with auto-refresh interval 2s', done => {
         new MemoryCache(),
         mockFetcher,
         sdkKey,
-        { 
+        {
             refreshInterval: 2,
             autoRefresh: true,
-            onUpdate: onUpdateCallback 
+            onUpdate: onUpdateCallback
         },
         'info');
 })

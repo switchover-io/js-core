@@ -31,7 +31,7 @@ test('test evaluation active without conditions', () => {
 
     const testConfig = [
         Object.assign(config[0], { conditions: []})
-    ] 
+    ]
 
     expect(evaluator.evaluate(testConfig, 'toggle-001', context, false))
         .toBeTruthy();
@@ -46,7 +46,7 @@ test('test evaluation always inactive', () => {
 
     const testConfig = [
         Object.assign(config[0], { status: 4})
-    ] 
+    ]
 
     expect(evaluator.evaluate(testConfig, 'toggle-001', context, true))
         .toBeTruthy();
@@ -65,7 +65,7 @@ test('test evaluation strategy all conditions true', () => {
 
     const testConfig = [
         Object.assign(config[0], { status: 1, strategy: 3 }) // STRAGEGY_ALL
-    ] 
+    ]
 
     expect(evaluator.evaluate(testConfig, 'toggle-001', context, true)).toBeTruthy();
 })

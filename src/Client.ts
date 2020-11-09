@@ -58,8 +58,8 @@ export class Client {
 
     /**
      * Initially Fetches all toggles from server and then fetch from cache. Callback will be triggerd when fetching is done.
-     * 
-     * @param cb 
+     *
+     * @param cb
      */
     fetch(cb: () => void) {
         if (!this.cache.getValue(this.sdkKey)) {
@@ -129,7 +129,7 @@ export class Client {
      * Manually refreshes toggles. If toggles were updated, callback will hold the changed toggle keys.
      * If nothing has changed, keys are null.
      *
-     * @param cb 
+     * @param cb
      */
     refresh(cb: (keys: string[]) => void) {
         this.doRefresh(cb);
