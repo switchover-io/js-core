@@ -40,49 +40,64 @@ export class Client {
 
         this.logger = Logger.createLogger(level);
 
-        this.logger.debug('created client, initaliziang...');
-
+        this.logger.debug('Created client');
+        
         this.initOptionListeners();
-
-        this.fetcher.fetchAll(this.sdkKey).then( apiResponse => {
-            this.logger.debug('Fetch all config on client initialization');
-
-            //fill cache
-            this.cache.setValue(sdkKey, apiResponse);
-            //emit loaded event
-            this.emitter.emit('loaded');
-
-            this.logger.debug('Loaded config');
-        })
 
         this.initPolling();
     }
-    
-    
 
+    /**
+     * Indicates if cached is filled, e.g after first fetch
+     */
+    isCacheFilled() {
+        const response = this.cache.getValue(this.sdkKey);
+        return response != null;
+    }
+
+
+    /**
+     * Initially Fetches all toggles from server and then fetch from cache. Callback will be triggerd when fetching is done.
+     *
+     * @param cb
+     */
+    fetch(cb: () => void) {
+        if (!this.cache.getValue(this.sdkKey)) {
+            this.fetcher.fetchAll(this.sdkKey).then(apiResponse => {
+                this.logger.debug('Fetch all config on client initialization');
+
+                //fill cache
+                this.cache.setValue(this.sdkKey, apiResponse);
+
+                this.logger.debug('Loaded config');
+
+                cb();
+            });
+        } else {
+            this.logger.debug('Fetched from cache');
+            cb();
+        }
+    }
+
+
+    /**
+     * Fetch as promise
+     */
+    fetchAsync() : Promise<void> {
+        return new Promise( (resolve, _) => {
+            this.fetch( () => resolve() );
+        })
+    }
 
     private initOptionListeners() {
-        if (this.options.onInit) {
-            this.onInit(this.options.onInit);
-        }
         if (this.options.onUpdate) {
             this.onUpdate(this.options.onUpdate);
         }
     }
 
-    /**
-     * Loaded event will be triggered, after client was successfully initialized
-     * 
-     * @param cb 
-     */
-    onInit(cb: () => void) {
-        this.emitter.on('loaded', cb);
-    }
 
     /**
      * Updated event will be triggered when toggles where changed and Auto-Refresh is enabled.
-     *
-     * Manually calling forceRefresh() can also trigger the update event.
      *
      * @param cb
      */
@@ -110,22 +125,26 @@ export class Client {
         return this.evaluator.evaluate(payload, name, context, defaultValue);
     }
 
-    /*
-    getValue(name:string, defaultValue) {
-        const { payload } = this.cache.getValue(this.sdkKey);
-        if (!payload) {
-            throw new Error('No features loaded! Did you wait for init?');
-        }
-        return payload.find( t => t.name === name)?.value;
-    }*/
-
+    /**
+     * Manually refreshes toggles. If toggles were updated, callback will hold the changed toggle keys.
+     * If nothing has changed, keys are null.
+     *
+     * @param cb
+     */
+    refresh(cb: (keys: string[]) => void) {
+        this.doRefresh(cb);
+    }
 
     /**
-     * Forces a refresh. This eventually can trigger an update event if toggles changed
-     * or never been loaded to the cache.
+     * Refreshes async
      */
-    forceRefresh() {
+    refreshAsync() : Promise<string[]> {
+        return new Promise( (resolve, _) => {
+            this.doRefresh( keys => resolve(keys) )
+        });
+    }
 
+    private doRefresh(cb: (keys: string[]) => void) {
         const { lastModified, payload } = this.cache.getValue(this.sdkKey) || {
             lastModified: null,
             payload: null
@@ -143,12 +162,14 @@ export class Client {
                 //fill cache
                 this.cache.setValue(this.sdkKey, result);
 
-                //emit loaded event
-                this.emitter.emit('updated', changed) //, changed);
+                cb(changed);
+            } else {
+                cb(null);
             }
         }).catch(err => {
             this.logger.error(err);
             this.logger.error(`Failed to load. Server sent ${err.status} ${err.text}`);
+            cb(null);
         });
     }
 
@@ -170,15 +191,23 @@ export class Client {
             this.logger.debug('Init AutoRefresh...')
             let interval = this.options.refreshInterval;
             if (!interval) {
-                this.logger.debug('AutoRefresh activated, no interval set, using default');
+                this.logger.debug('AutoRefresh activated using default');
                 interval = 60;
             }
             this.logger.debug('Init polling with interval=' + interval);
             this.pollHandle = setInterval(() => {
-                this.forceRefresh();
+                this.pollAndNotifyOnUpdates();
             }, interval * 1000);
-
         }
+    }
+
+    private pollAndNotifyOnUpdates() {
+        this.doRefresh((changedKeys) => {
+            if (changedKeys) {
+                //emit loaded event
+                this.emitter.emit('updated', changedKeys) //, changed);
+            }
+        });
     }
     
     /**
