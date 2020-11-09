@@ -44,20 +44,14 @@ export class Client {
         
         this.initOptionListeners();
 
-        /*
-        this.fetcher.fetchAll(this.sdkKey).then( apiResponse => {
-            this.logger.debug('Fetch all config on client initialization');
-
-            //fill cache
-            this.cache.setValue(sdkKey, apiResponse);
-            //emit loaded event
-            this.emitter.emit('loaded');
-
-            this.logger.debug('Loaded config');
-        })*/
-
         this.initPolling();
     }
+
+    isCacheFilled() {
+        const response = this.cache.getValue(this.sdkKey);
+        return response != null;
+    }
+
 
     /**
      * Fetches all toggles from server or cache. Callback will be triggerd when fetching is done.
@@ -85,9 +79,6 @@ export class Client {
 
 
     private initOptionListeners() {
-        if (this.options.onInit) {
-            this.onInit(this.options.onInit);
-        }
         if (this.options.onUpdate) {
             this.onUpdate(this.options.onUpdate);
         }

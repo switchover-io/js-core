@@ -1,6 +1,6 @@
 {
   "name": "switchover-js-core",
-  "version": "0.6.9",
+  "version": "1.0.0",
   "description": "Switchover core library",
   "main": "./dist/index.js",
   "module": "./esm/index.js",
