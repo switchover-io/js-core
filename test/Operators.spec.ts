@@ -1,4 +1,4 @@
-import { Condition, satisfies, operators } from '../src/operators';
+import { Condition, satisfies, operators, ConditionAsserter } from '../src/operators';
 
 test('test no context should return false', () => {
     const cond:Condition = {
@@ -206,4 +206,36 @@ test('test percentual rollout', () =>{
     expect(satisfies(cond, {uuid: 1}, 'feature', logger)).toBeFalsy();
 
     expect(satisfies(cond, {uuid: 2}, 'feature', logger)).toBeTruthy();
+});
+
+test('test a/b split with allocation value', () => {
+
+    const cond: Condition = {
+        key: "percentual-rollout",
+        name: "rollout-condition",
+        allocations: [
+            {
+                name: "bucketA",
+                value: 1,
+                ratio: 0.5
+            }, {
+                name: "bucketB",
+                value: 2,
+                ratio: 0.5
+            },
+        ]
+    }
+
+    const logger = Logger.createLogger("debug");
+
+    const asserter = new ConditionAsserter(logger);
+
+    const result1 = asserter.satisfies(cond, {uuid: 1}, 'feature');
+    
+    expect(result1.isValid).toBeTruthy();
+    expect(result1.rolloutValue).toBe(2);
+
+    const result2 = asserter.satisfies(cond, {uuid: 2}, 'feature');
+    expect(result1.isValid).toBeTruthy();
+    expect(result1.rolloutValue).toBe(1);
 });
