@@ -1,4 +1,4 @@
-import { Condition, satisfies, operators, ConditionAsserter } from '../src/operators';
+import { Condition, OperatorBag } from '../src/operators';
 
 test('test no context should return false', () => {
     const cond:Condition = {
@@ -8,8 +8,8 @@ test('test no context should return false', () => {
             value: 'qa'
         }
     }
-
-    expect(satisfies(cond, {})).toBeFalsy();
+    const bag = new OperatorBag(Logger.getLogger());
+    expect(bag.satisfies(cond, {}).isValid).toBeFalsy();
 })
 
 test('basic operators test', () => {
@@ -22,8 +22,8 @@ test('basic operators test', () => {
     }
     const context = { 'key01': 'aValue01', 'key02' : 'valueOfKey02' };
     expect(context[cond.key]).toEqual('aValue01');
-    expect(operators[cond.operator.name]).toBeDefined();
-    expect(operators[cond.operator.name](cond.operator.value, context[cond.key])).toBeTruthy();
+    //expect(operators[cond.operator.name]).toBeDefined();
+    //expect(operators[cond.operator.name](cond.operator.value, context[cond.key])).toBeTruthy();
 });
 
 test('test equal string', () => {
@@ -35,8 +35,10 @@ test('test equal string', () => {
         }
     }
     const context = { 'key01': 'aValue01', 'key02' : 'valueOfKey02' };
-    expect(satisfies(cond, context)).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 'notEqualValue01' })).toBeFalsy();
+
+    const bag = new OperatorBag(Logger.getLogger());
+    expect(bag.satisfies(cond, context).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 'notEqualValue01' }).isValid).toBeFalsy();
 })
 
 test('test equal number', () => {
@@ -47,8 +49,9 @@ test('test equal number', () => {
             value: 2
         }
     }
-    expect(satisfies(cond, { 'key01': 2 })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 3 })).toBeFalsy();
+    const bag = new OperatorBag(Logger.getLogger());
+    expect(bag.satisfies(cond, { 'key01': 2 }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 3 }).isValid).toBeFalsy();
 })
 
 test('test greater-than', () => {
@@ -59,10 +62,11 @@ test('test greater-than', () => {
             value: 2
         }
     }
-    expect(satisfies(cond, { 'key01': 3 })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 2 })).toBeFalsy();
-    expect(satisfies(cond, { 'key01': '2' })).toBeFalsy();
-    expect( () => satisfies(cond, { 'key01': 'non_number' })).toThrow();
+    const bag = new OperatorBag(Logger.getLogger());
+    expect(bag.satisfies(cond, { 'key01': 3 }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 2 }).isValid).toBeFalsy();
+    expect(bag.satisfies(cond, { 'key01': '2' }).isValid).toBeFalsy();
+    expect( () => bag.satisfies(cond, { 'key01': 'non_number' })).toThrow();
 })
 
 test('test greater-than-equal', () => {
@@ -73,9 +77,10 @@ test('test greater-than-equal', () => {
             value: 2
         }
     }
-    expect(satisfies(cond, { 'key01': 3 })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 2 })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 1 })).toBeFalsy();
+    const bag = new OperatorBag(Logger.getLogger());
+    expect(bag.satisfies(cond, { 'key01': 3 }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 2 }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 1 }).isValid).toBeFalsy();
 })
 
 test('test less-than', () => {
@@ -86,10 +91,12 @@ test('test less-than', () => {
             value: 2
         }
     }
-    expect(satisfies(cond, { 'key01': -1 })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 1 })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 2 })).toBeFalsy();
-    expect(satisfies(cond, { 'key01': 4 })).toBeFalsy();
+    const bag = new OperatorBag(Logger.getLogger());
+
+    expect(bag.satisfies(cond, { 'key01': -1 }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 1 }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 2 }).isValid).toBeFalsy();
+    expect(bag.satisfies(cond, { 'key01': 4 }).isValid).toBeFalsy();
 })
 
 test('test less-than-equal', () => {
@@ -100,10 +107,12 @@ test('test less-than-equal', () => {
             value: 2
         }
     }
-    expect(satisfies(cond, { 'key01': -1 })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 1 })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 2 })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 4 })).toBeFalsy();
+    const bag = new OperatorBag(Logger.getLogger());
+
+    expect(bag.satisfies(cond, { 'key01': -1 }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 1 }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 2 }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 4 }).isValid).toBeFalsy();
 })
 
 test('test in-set', () => {
@@ -114,9 +123,11 @@ test('test in-set', () => {
             value: [ 'foo', 'bar' ]
         }
     }
-    expect(satisfies(cond, { 'key01': 'foo' })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 'bar' })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 'otherValue' })).toBeFalsy();
+    const bag = new OperatorBag(Logger.getLogger());
+
+    expect(bag.satisfies(cond, { 'key01': 'foo' }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 'bar' }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 'otherValue' }).isValid).toBeFalsy();
 })
 
 test('test not-in-set', () => {
@@ -127,8 +138,10 @@ test('test not-in-set', () => {
             value: [ 'foo', 'bar' ]
         }
     }
-    expect(satisfies(cond, { 'key01': 'valueShouldBeThere' })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 'foo' })).toBeFalsy();
+    const bag = new OperatorBag(Logger.getLogger());
+
+    expect(bag.satisfies(cond, { 'key01': 'valueShouldBeThere' }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 'foo' }).isValid).toBeFalsy();
 })
 
 test('test matches regex', () => {
@@ -139,9 +152,12 @@ test('test matches regex', () => {
             value: '.+@some-corp\.com'
         }
     }
-    expect(satisfies(cond, { 'key01': 'user1@some-corp.com' })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 'user2@some-corp.com' })).toBeTruthy();
-    expect(satisfies(cond, { 'key01': 'user1@other-corp.com' })).toBeFalsy();
+
+    const bag = new OperatorBag(Logger.getLogger());
+
+    expect(bag.satisfies(cond, { 'key01': 'user1@some-corp.com' }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 'user2@some-corp.com' }).isValid).toBeTruthy();
+    expect(bag.satisfies(cond, { 'key01': 'user1@other-corp.com' }).isValid).toBeFalsy();
 })
 
 test('test operator not exits should return false', ()=> {
@@ -158,7 +174,9 @@ test('test operator not exits should return false', ()=> {
         "key01" : "brandon.taylor@acme.com"
     }
 
-    expect(satisfies(cond, context)).toBeFalsy();
+    const bag = new OperatorBag(Logger.getLogger());
+
+    expect(bag.satisfies(cond, context).isValid).toBeFalsy();
 });
 
 test("test percentual rollout no uuid given", () => {
@@ -175,18 +193,11 @@ test("test percentual rollout no uuid given", () => {
 
     const ctx = {}; // we give no uuid
 
-    expect( () => { satisfies(cond, ctx) }).toThrowError('Rollout condition/option is set but no uuid is given!');
+    expect( () => { new OperatorBag(Logger.getLogger()).satisfies(cond, ctx) }).toThrowError('Rollout condition/option is set but no uuid is given!');
 });
 
-import {md5 } from '../src/util/Hash';
+
 import { Logger } from '../src/util/Logger';
-
-
-test('test md5', () => { 
-
-    expect(md5('switchover')).toBe('9eaa87e8fc6111207ce11ca28efc6a81');
-    expect(md5('some string')).toBe('5ac749fbeec93607fc28d666be85e73a');
-})
 
 
 test('test percentual rollout', () =>{
@@ -202,10 +213,11 @@ test('test percentual rollout', () =>{
     }
 
     const logger = Logger.createLogger("debug");
+    const bag = new OperatorBag(logger);
 
-    expect(satisfies(cond, {uuid: 1}, 'feature', logger)).toBeFalsy();
+    expect(bag.satisfies(cond, {uuid: 1}, 'feature').isValid).toBeFalsy();
 
-    expect(satisfies(cond, {uuid: 2}, 'feature', logger)).toBeTruthy();
+    expect(bag.satisfies(cond, {uuid: 2}, 'feature').isValid).toBeTruthy();
 });
 
 test('test a/b split with allocation value', () => {
@@ -228,14 +240,14 @@ test('test a/b split with allocation value', () => {
 
     const logger = Logger.createLogger("debug");
 
-    const asserter = new ConditionAsserter(logger);
+    const bag = new OperatorBag(logger);
 
-    const result1 = asserter.satisfies(cond, {uuid: 1}, 'feature');
+    const result1 = bag.satisfies(cond, {uuid: 1}, 'feature');
     
     expect(result1.isValid).toBeTruthy();
     expect(result1.rolloutValue).toBe(2);
 
-    const result2 = asserter.satisfies(cond, {uuid: 2}, 'feature');
-    expect(result1.isValid).toBeTruthy();
-    expect(result1.rolloutValue).toBe(1);
+    const result2 = bag.satisfies(cond, {uuid: 2}, 'feature');
+    expect(result2.isValid).toBeTruthy();
+    expect(result2.rolloutValue).toBe(1);
 });

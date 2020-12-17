@@ -1,5 +1,5 @@
 import { Logger } from "./util/Logger";
-import { Condition, satisfies } from "./operators";
+import { Condition, OperatorBag } from "./operators";
 
 
 const ACTIVE = 1;
@@ -13,6 +13,11 @@ const STRATEGY_ALL = 3;
 export class Evaluator {
 
     private logger: Logger = Logger.getLogger();
+    private operatorBag: OperatorBag;
+
+    constructor() {
+        this.operatorBag = new OperatorBag(this.logger);
+    }
 
     public evaluate(config: any, name: string, context: any, defaultValue: any){
         this.logger.debug('Evalutate config for toggle ' + name);
@@ -67,56 +72,75 @@ export class Evaluator {
         //TODO Check according evaluation strategy
         switch(strategy) {
             case STRATEGY_ALL:
-                return this.evaluateAll(toggle, context) ? toggle.value : defaultValue;
+                return this.evaluateAll(toggle, context, defaultValue); // ? toggle.value : defaultValue;
             case STRATEGY_ATLEASTONE:
-                return this.evaluateAtLeastOne(toggle, context) ? toggle.value : defaultValue;
+                return this.evaluateAtLeastOne(toggle, context, defaultValue); //? toggle.value : defaultValue;
             case STRATEGY_MAJORITY:
-                return this.evaluateMajority(toggle, context) ? toggle.value : defaultValue;
+                return this.evaluateMajority(toggle, context, defaultValue); //? toggle.value : defaultValue;
         }
     
         throw new Error('No toggle.strategy given!');
     }
     
-    private evaluateAll(toggle, context) {
+    private evaluateAll(toggle, context, defaultValue) {
         this.logger.debug('All toggle conditions have to be satisfied');
+
+        let rolloutValue = null;
         for(const cond of toggle.conditions) {
-            if (!satisfies(cond, context)) {
+            const assertResult = this.operatorBag.satisfies(cond, context, toggle.name);
+            if (assertResult.rolloutValue) {
+                rolloutValue = assertResult.rolloutValue;
+            }
+            if (!assertResult.isValid) {
                 this.logger.debug('Cond ' + cond.key + ' was not satisfied');       
                 this.logger.debug(cond);
-                return false;
+                return defaultValue;
             }
         }
         this.logger.debug('All conditions satisfied');
-        return true;
+
+        return rolloutValue || toggle.value;
     }
     
-    private evaluateAtLeastOne(toggle, context) {
+    private evaluateAtLeastOne(toggle, context, defaultValue) {
         this.logger.debug('At least one condition has to be satisfied');
         for(const cond of toggle.conditions) {
-            if (satisfies(cond, context)) {
+            const assertResult = this.operatorBag.satisfies(cond, context, toggle.name)
+            if (assertResult.isValid) {
                 this.logger.debug('Condition ' + cond.key + ' was satisfied by given context');
-                return true;
+                return assertResult.rolloutValue || toggle.value;
             }
         }
         this.logger.debug('No condition satisfied');
-        return false;
+        return defaultValue;
     }
 
 
-    private evaluateMajority(toggle, context) : boolean {
+
+
+    private evaluateMajority(toggle, context, defaultValue) : boolean {
         this.logger.debug('Majority of conditions has to be satisfied');
 
-        let hit = 0;
+        let hit = 0;    
         let miss = 0;
+
+        let rolloutValue = null;
         for(const cond of toggle.conditions) {
-            if (satisfies(cond, context)) {
+            const assertResult = this.operatorBag.satisfies(cond, context, toggle.name);
+            if (assertResult.isValid) {
+                if (assertResult.rolloutValue) {
+                    rolloutValue = assertResult.rolloutValue;
+                }
                 this.logger.debug('Condition ' + cond.key + ' was satisfied by given context');
                 hit++
             } else {
                 miss++
             }
         }
-        return hit > miss;
+        if (hit > miss) {
+            return rolloutValue || toggle.value;
+        }
+        return defaultValue;
     }
     
     
