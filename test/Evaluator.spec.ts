@@ -1,4 +1,5 @@
 import { Evaluator } from "../src/Evaluator"
+import { Logger } from "../src/util/Logger";
 
 const config = [{
     name: "toggle-001",
@@ -187,3 +188,36 @@ test('Evaluation with json value', () => {
     expect(value.host).toBe("service01.tld");
 });
 
+
+test('Rollout conditions multivariation', () => {
+
+    const config = [{
+        name: "toggle-001",
+        status: 1,
+        value: 1,
+        strategy: 3,
+        conditions: [
+            {
+                key: "key01",
+                name: "rollout-condition",
+                allocations: [{
+                    name: "BucketA",
+                    value: 10,
+                    ratio: 0.5
+                },
+                {
+                    name: "BucketB",
+                    value: 20,
+                    ratio: 0.5
+                }]
+            }
+        ]
+    }];
+
+    const logger = Logger.createLogger("debug");
+    const evaluator = new Evaluator();
+
+    const value = evaluator.evaluate(config, "toggle-001", {uuid: "1"}, -1);
+
+    expect(value).toBe(10);
+});
