@@ -3,7 +3,7 @@ import { Fetcher } from "./Fetcher";
 import { Options } from "./Options";
 import { Logger } from "./util/Logger";
 import { LogLevel } from "./util/LogLevel";
-import { ResponseCache } from './Cache';
+import { CachedItem, ResponseCache } from './Cache';
 import { Evaluator } from "./Evaluator";
 import * as equal from 'fast-deep-equal';
 import { ApiResponse } from "./ApiResponse";
@@ -52,7 +52,7 @@ export class Client {
      */
     isCacheFilled() {
         const response = this.cache.getValue(this.sdkKey);
-        return response != null;
+        return response != null; // && !response.isExpired();
     }
 
 
@@ -62,12 +62,20 @@ export class Client {
      * @param cb
      */
     fetch(cb: () => void) {
+
+        //clear cache when expired
+        const cachedItem = this.cache.getValue(this.sdkKey);
+        if (cachedItem && cachedItem.isExpired()) {
+            this.cache.setValue(this.sdkKey, null);
+        }
+        
         if (!this.cache.getValue(this.sdkKey)) {
             this.fetcher.fetchAll(this.sdkKey).then(apiResponse => {
                 this.logger.debug('Fetch all config on client initialization');
 
+                const cachedItem = new CachedItem(apiResponse, new Date(), this.options.ttl);
                 //fill cache
-                this.cache.setValue(this.sdkKey, apiResponse);
+                this.cache.setValue(this.sdkKey, cachedItem);
 
                 this.logger.debug('Loaded config');
 
@@ -121,7 +129,9 @@ export class Client {
      *
      */
     toggleValue(name: string, defaultValue, context = {}) {
-        const { payload } = this.cache.getValue(this.sdkKey) || { lastModified: null, payload: null };
+        const cachedItem = this.cache.getValue(this.sdkKey);
+        const { payload } = cachedItem ? cachedItem.item : { payload: null };
+       // const { payload } = this.cache.getValue(this.sdkKey) || { lastModified: null, payload: null };
         return this.evaluator.evaluate(payload, name, context, defaultValue);
     }
 
@@ -145,11 +155,22 @@ export class Client {
     }
 
     private doRefresh(cb: (keys: string[]) => void) {
+        const cachedItem = this.cache.getValue(this.sdkKey);
+
+        let lastModified = null;
+        let oldCacheResult = null;
+        if (cachedItem) { // && !cachedItem.isExpired()) {
+            lastModified = cachedItem.item.lastModified;
+            oldCacheResult = cachedItem.item.payload
+        }
+
+        /*
+
         const { lastModified, payload } = this.cache.getValue(this.sdkKey) || {
             lastModified: null,
             payload: null
         };
-        const oldCacheResult = payload;
+        const oldCacheResult = payload; */
 
         this.fetcher.fetchAll(this.sdkKey, lastModified).then( result => {
 
@@ -159,8 +180,10 @@ export class Client {
                 //get changed toggles
                 let changed = this.getChangedKeys(result, oldCacheResult);
 
+                const cachedItem = new CachedItem(result, new Date(), this.options.ttl);
+
                 //fill cache
-                this.cache.setValue(this.sdkKey, result);
+                this.cache.setValue(this.sdkKey, cachedItem);
 
                 cb(changed);
             } else {
@@ -224,7 +247,8 @@ export class Client {
      * Get all toggle keys, which currently loaded
      */
     getToggleKeys() {
-        const cachedResponse = this.cache.getValue(this.sdkKey);
+        const cached = this.cache.getValue(this.sdkKey);
+        const cachedResponse = cached ? cached.item : null;
         if (this.hasCachedResonse(cachedResponse)) {
             return cachedResponse.payload.map( t => t.name);
         }

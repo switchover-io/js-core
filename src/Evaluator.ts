@@ -10,6 +10,12 @@ const STRATEGY_ATLEASTONE = 1;
 const STRATEGY_MAJORITY = 2;
 const STRATEGY_ALL = 3;
 
+export interface EvaluationResult {
+    value: any;
+    variationId?: any;
+}
+
+
 export class Evaluator {
 
     private logger: Logger = Logger.getLogger();

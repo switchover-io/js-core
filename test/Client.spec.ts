@@ -41,20 +41,62 @@ test('Test fetch', done => {
             new Evaluator(),
             new EventEmitter(),
             cache, mockFetcher,
-            sdkKey, { autoRefresh: false }, 'info');
+            sdkKey, { autoRefresh: false}, 'info');
 
     client.fetch( () => {
         try {
             expect(mockFetcher.fetchAll).toBeCalledTimes(1);
-            expect(cache.getValue(sdkKey).lastModified).toEqual(response1.lastModified);
-            done();
+            expect(cache.getValue(sdkKey).item.lastModified).toEqual(response1.lastModified);
+            //done();
         } catch(error) {
             done(error)
         }
     });
 
-      
+    //cache should not expire (we did not provide a ttl) and fetch all should not be called again
+    setTimeout(() => {
+        client.fetch( () => {
+            expect(mockFetcher.fetchAll).toBeCalledTimes(1);
+            done();
+        })
+    }, 2000)   
 });
+
+test('Test fetch with ttl 2sec', done => {
+    const sdkKey = 'some_key'
+
+    mockFetcher.fetchAll.mockImplementation( () => Promise.resolve(response1));
+
+    const cache = new MemoryCache();
+    const client = new Client(
+            new Evaluator(),
+            new EventEmitter(),
+            cache, mockFetcher,
+            sdkKey, { autoRefresh: false, ttl: 2  }, 'info');
+
+    client.fetch( () => {
+        try {
+            expect(mockFetcher.fetchAll).toBeCalledTimes(1);
+            expect(cache.getValue(sdkKey).ttl).toEqual(2);
+            //done();
+        } catch(error) {
+            done(error)
+        }
+    });
+
+    setTimeout(() => {
+        expect(cache.getValue(sdkKey).isExpired()).toBeTruthy();
+        //fetch again
+        client.fetch( () => {
+            expect(mockFetcher.fetchAll).toBeCalledTimes(2);
+            done();
+        })
+
+    }, 3000); //After 3 seconds the cache should be expired
+
+
+
+})
 
 test('Test fetchAsync', async () => {
     const sdkKey = 'some_key'
@@ -71,7 +113,7 @@ test('Test fetchAsync', async () => {
     await client.fetchAsync();
 
     expect(mockFetcher.fetchAll).toBeCalledTimes(1);
-    expect(cache.getValue(sdkKey).lastModified).toEqual(response1.lastModified);
+    expect(cache.getValue(sdkKey).item.lastModified).toEqual(response1.lastModified);
 })
 
 test('Test isCachedFilled', done => {
