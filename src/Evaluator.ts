@@ -21,11 +21,12 @@ export class Evaluator {
     private logger: Logger = Logger.getLogger();
     private operatorBag: OperatorBag;
 
-    constructor() {
+    constructor(logger?:Logger) {
+        this.logger = logger || Logger.getLogger();
         this.operatorBag = new OperatorBag(this.logger);
     }
 
-    public evaluate(config: any, name: string, context: any, defaultValue: any){
+    public evaluate(config: any, name: string, context: any, defaultValue: any,  defaultVariationId?: any) : EvaluationResult {
         this.logger.debug('Evalutate config for toggle ' + name);
 
         if (!config) {
@@ -42,33 +43,33 @@ export class Evaluator {
             //check conditions on given context
             switch (status) {
                 case ACTIVE:
-                    return this.evaluateOnActive(toggle, context, defaultValue); 
+                    return this.evaluateOnActive(toggle, context, defaultValue, defaultVariationId); 
                 case INACTIVE:
-                    return defaultValue;
+                    return { value: defaultValue, variationId: defaultVariationId };
             }
 
         }
         this.logger.error('Toggle with name ' + name + ' not found! Return default value');
 
-        return defaultValue;
+        return { value: defaultValue, variationId: defaultVariationId };
     }
 
-    private evaluateOnActive(toggle, context, defaultValue: any) {
+    private evaluateOnActive(toggle, context, defaultValue: any, defaultVariationId?: any) : EvaluationResult {
         if (this.hasConditions(toggle)) {
-            return this.evaluateWithConditions(toggle, context, defaultValue);
+            return this.evaluateWithConditions(toggle, context, defaultValue, defaultVariationId);
         }
-        return toggle.value;
+        return { value: toggle.value, variationId: defaultVariationId };
     }
 
     private hasConditions(toggle) {
         return toggle.conditions &&  toggle.conditions.length > 0;
     }
 
-    private evaluateWithConditions(toggle, context, defaultValue) {
+    private evaluateWithConditions(toggle, context, defaultValue, defaultVariationId?: any) : EvaluationResult {
         this.logger.debug('Evaluate toggle with conditions');
     
         if (!context && this.hasConditions(toggle) ) {
-            return defaultValue
+            return { value: defaultValue, variationId: defaultVariationId }
         }
     
         const strategy = parseInt(toggle.strategy);
@@ -78,53 +79,69 @@ export class Evaluator {
         //TODO Check according evaluation strategy
         switch(strategy) {
             case STRATEGY_ALL:
-                return this.evaluateAll(toggle, context, defaultValue); // ? toggle.value : defaultValue;
+                return this.evaluateAll(toggle, context, defaultValue, defaultVariationId); // ? toggle.value : defaultValue;
             case STRATEGY_ATLEASTONE:
-                return this.evaluateAtLeastOne(toggle, context, defaultValue); //? toggle.value : defaultValue;
-            case STRATEGY_MAJORITY:
-                return this.evaluateMajority(toggle, context, defaultValue); //? toggle.value : defaultValue;
+                return this.evaluateAtLeastOne(toggle, context, defaultValue, defaultVariationId); //? toggle.value : defaultValue;
+            /*case STRATEGY_MAJORITY:
+                return this.evaluateMajority(toggle, context, defaultValue, defaultVariationId); //? toggle.value : defaultValue; */
         }
     
         throw new Error('No toggle.strategy given!');
     }
     
-    private evaluateAll(toggle, context, defaultValue) {
+    private evaluateAll(toggle, context, defaultValue, defaultVariationId?: any) : EvaluationResult {
         this.logger.debug('All toggle conditions have to be satisfied');
 
         let rolloutValue = null;
+        let variationId = null;
         for(const cond of toggle.conditions) {
             const assertResult = this.operatorBag.satisfies(cond, context, toggle.name);
             if (assertResult.rolloutValue) {
                 rolloutValue = assertResult.rolloutValue;
             }
+            if (assertResult.variationId) {
+                variationId = assertResult.variationId;
+            }
             if (!assertResult.isValid) {
                 this.logger.debug('Cond ' + cond.key + ' was not satisfied');       
                 this.logger.debug(cond);
-                return defaultValue;
+                return {
+                    value: defaultValue,
+                    variationId: defaultVariationId
+                }
             }
         }
         this.logger.debug('All conditions satisfied');
 
-        return rolloutValue || toggle.value;
+        return {
+            value: rolloutValue || toggle.value,
+            variationId: variationId || defaultVariationId
+        }
     }
     
-    private evaluateAtLeastOne(toggle, context, defaultValue) {
+    private evaluateAtLeastOne(toggle, context, defaultValue, defaultVariationId?: any) {
         this.logger.debug('At least one condition has to be satisfied');
         for(const cond of toggle.conditions) {
             const assertResult = this.operatorBag.satisfies(cond, context, toggle.name)
             if (assertResult.isValid) {
                 this.logger.debug('Condition ' + cond.key + ' was satisfied by given context');
-                return assertResult.rolloutValue || toggle.value;
+                return {
+                    value: assertResult.rolloutValue || toggle.value,
+                    variationId: assertResult.variationId || defaultVariationId
+                }
             }
         }
         this.logger.debug('No condition satisfied');
-        return defaultValue;
+        return {
+            value: defaultValue,
+            variationId: defaultVariationId
+        }
     }
 
 
 
-
-    private evaluateMajority(toggle, context, defaultValue) : boolean {
+/*
+    private evaluateMajority(toggle, context, defaultValue) : EvaluationResult {
         this.logger.debug('Majority of conditions has to be satisfied');
 
         let hit = 0;    
@@ -147,7 +164,7 @@ export class Evaluator {
             return rolloutValue || toggle.value;
         }
         return defaultValue;
-    }
+    } */
     
     
     private findByName(config, name) {

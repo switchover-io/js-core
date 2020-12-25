@@ -23,13 +23,13 @@ export class Client {
 
 
     constructor(
-            evaluator: Evaluator,
-            emitter: Emitter,
-            cache: ResponseCache,
-            fetcher: Fetcher,
-            sdkKey: string,
-            options: Options,
-            level: LogLevel) {
+        evaluator: Evaluator,
+        emitter: Emitter,
+        cache: ResponseCache,
+        fetcher: Fetcher,
+        sdkKey: string,
+        options: Options,
+        level: LogLevel) {
 
         this.evaluator = evaluator;
         this.emitter = emitter;
@@ -41,7 +41,7 @@ export class Client {
         this.logger = Logger.createLogger(level);
 
         this.logger.debug('Created client');
-        
+
         this.initOptionListeners();
 
         this.initPolling();
@@ -68,7 +68,7 @@ export class Client {
         if (cachedItem && cachedItem.isExpired()) {
             this.cache.setValue(this.sdkKey, null);
         }
-        
+
         if (!this.cache.getValue(this.sdkKey)) {
             this.fetcher.fetchAll(this.sdkKey).then(apiResponse => {
                 this.logger.debug('Fetch all config on client initialization');
@@ -91,9 +91,9 @@ export class Client {
     /**
      * Fetch as promise
      */
-    fetchAsync() : Promise<void> {
-        return new Promise( (resolve, _) => {
-            this.fetch( () => resolve() );
+    fetchAsync(): Promise<void> {
+        return new Promise((resolve, _) => {
+            this.fetch(() => resolve());
         })
     }
 
@@ -131,8 +131,43 @@ export class Client {
     toggleValue(name: string, defaultValue, context = {}) {
         const cachedItem = this.cache.getValue(this.sdkKey);
         const { payload } = cachedItem ? cachedItem.item : { payload: null };
-       // const { payload } = this.cache.getValue(this.sdkKey) || { lastModified: null, payload: null };
-        return this.evaluator.evaluate(payload, name, context, defaultValue);
+        // const { payload } = this.cache.getValue(this.sdkKey) || { lastModified: null, payload: null };
+        return this.evaluator.evaluate(payload, name, context, defaultValue).value;
+    }
+
+
+    /**
+     * Returns a varation id for given toggle name, if evaluation fails, it will return the given default variation id.
+     *
+     * Note: Variation ids will be often used in combination with rollout options (percentual-rollout, a/b-split). You can use
+     * the variation id to track user
+     *
+     * @param name 
+     * @param defaultVariationId 
+     * @param context 
+     */
+    getVariationId(name: string, defaultVariationId, context = {}) {
+        const cachedItem = this.cache.getValue(this.sdkKey);
+        const { payload } = cachedItem ? cachedItem.item : { payload: null };
+        return this.evaluator.evaluate(payload, name, context, null, defaultVariationId).variationId;
+    }
+
+    getVariationsIds() {
+        const cachedItem = this.cache.getValue(this.sdkKey);
+        if (cachedItem && cachedItem.item) {
+            return cachedItem.item.payload
+                .filter(toggle => toggle.conditions)
+                .flatMap(toggle => {
+                    return toggle.conditions.filter(cond => cond.allocations)
+                        .flatMap(cond => cond.allocations.map(alloc => {
+                            return {
+                                toggleName: toggle.name,
+                                variationId: alloc.name
+                            }
+                        }))
+                });
+        }
+        return [];
     }
 
     /**
@@ -148,9 +183,9 @@ export class Client {
     /**
      * Refreshes async
      */
-    refreshAsync() : Promise<string[]> {
-        return new Promise( (resolve, _) => {
-            this.doRefresh( keys => resolve(keys) )
+    refreshAsync(): Promise<string[]> {
+        return new Promise((resolve, _) => {
+            this.doRefresh(keys => resolve(keys))
         });
     }
 
@@ -172,7 +207,7 @@ export class Client {
         };
         const oldCacheResult = payload; */
 
-        this.fetcher.fetchAll(this.sdkKey, lastModified).then( result => {
+        this.fetcher.fetchAll(this.sdkKey, lastModified).then(result => {
 
             //check also the lastModified value
             if (result && result.lastModified !== lastModified) {
@@ -198,10 +233,10 @@ export class Client {
 
     private getChangedKeys(result: ApiResponse, oldCacheResult: any) {
         if (oldCacheResult) {
-            return result.payload.filter( resultToggle => {
-                const cachedToggle = oldCacheResult.find( ot => ot.name === resultToggle.name);
+            return result.payload.filter(resultToggle => {
+                const cachedToggle = oldCacheResult.find(ot => ot.name === resultToggle.name);
                 return !deepEqual(cachedToggle, resultToggle);
-            }).map( t => t.name );
+            }).map(t => t.name);
         }
         return result.payload.map(t => t.name);
     }
@@ -232,7 +267,7 @@ export class Client {
             }
         });
     }
-    
+
     /**
      * Stops auto-refresh. You can start againt with startPolling()
      */
@@ -250,7 +285,7 @@ export class Client {
         const cached = this.cache.getValue(this.sdkKey);
         const cachedResponse = cached ? cached.item : null;
         if (this.hasCachedResonse(cachedResponse)) {
-            return cachedResponse.payload.map( t => t.name);
+            return cachedResponse.payload.map(t => t.name);
         }
         return [];
     }

@@ -101,7 +101,7 @@ class Multivariation2 {
         const intVal = parseInt(strHash, 16);
         const split = intVal / 0xFFFFFF;
 
-        this.logger.debug(`Calculated split for ${identifer}: ${split}`);
+        this.logger.debug(`Calculated split for ${hashCand}: ${split}`);
 
         return split;
     }
@@ -128,7 +128,7 @@ class Multivariation2 {
 
         if (variation) {
             const allocationValue = variation.value ? variation.value : null;
-            return new AssertionResult(true, allocationValue);
+            return new AssertionResult(true, allocationValue, variation.name);
         }
         return new AssertionResult(false);
     }

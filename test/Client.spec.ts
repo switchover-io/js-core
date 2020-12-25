@@ -7,6 +7,7 @@ import { Fetcher } from '../src/Fetcher';
 import { mocked } from 'ts-jest/utils'
 import { ApiResponse } from '../src/ApiResponse';
 import { convertCompilerOptionsFromJson } from 'typescript';
+import { Logger } from '../src/util/Logger';
 
 
 
@@ -253,4 +254,62 @@ test('Client toggleValue should return default value if not init', () => {
 
     expect(client.toggleValue('toggle1', true)).toBeTruthy();
     expect(client.toggleValue('toggle29391', false)).toBeFalsy();
+})
+
+
+test('Client variationId should return value for percentual rollout', async () => {
+    const sdkKey = 'some_key'
+
+    const variationResponse:ApiResponse =
+    {
+        lastModified: "1",
+        payload: [{
+            name: "toggle-001",
+            status: 1,
+            value: 1,
+            strategy: 1,
+            conditions: [
+                {
+                    key: "key01",
+                    name: "rollout-condition",
+                    allocations: [{
+                        name: "BucketA",
+                        value: 10,
+                        ratio: 0.5
+                    },
+                    {
+                        name: "BucketB",
+                        value: 20,
+                        ratio: 0.5
+                    }]
+                }
+            ]
+        }]
+    }
+
+    const otherFetcher = {
+        fetchAll: jest.fn()
+    }
+
+    otherFetcher.fetchAll.mockImplementationOnce( () => Promise.resolve(variationResponse));
+
+    
+    const client = new Client(
+        new Evaluator(Logger.createLogger("debug")),
+        new EventEmitter(),
+        new MemoryCache(),
+        otherFetcher,
+        sdkKey, { autoRefresh: false }, 'debug');
+
+    await client.fetchAsync();
+
+    console.log(client.getToggleKeys());
+
+    const variation = client.getVariationId("toggle-001", "Control", {uuid: 1});
+    expect(variation).toEqual("BucketA");
+
+    const variation2 = client.getVariationId("toggle-001", "Control", {uuid: 4});
+    expect(variation2).toEqual("BucketB");
+
+    expect(client.getVariationsIds()).toHaveLength(2);
 })
