@@ -1,5 +1,5 @@
 export { ApiResponse } from "./ApiResponse";
-export { ResponseCache } from "./Cache";
+export { ResponseCache, CachedItem } from "./Cache";
 export { MemoryCache } from './MemoryCache';
 export { Client } from "./Client";
 export { Fetcher } from './Fetcher';
