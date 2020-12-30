@@ -21,6 +21,9 @@ export class Client {
     sdkKey: string;
     options: Options
 
+    //TODO "lastCachedItem" for async cache
+
+    private lastCachedItem: CachedItem;
 
     constructor(
         evaluator: Evaluator,
@@ -51,8 +54,7 @@ export class Client {
      * Indicates if cached is filled, e.g after first fetch
      */
     isCacheFilled() {
-        const response = this.cache.getValue(this.sdkKey);
-        return response != null; // && !response.isExpired();
+        return this.lastCachedItem && this.lastCachedItem.item != null; // && !response.isExpired();
     }
 
 
@@ -62,29 +64,42 @@ export class Client {
      * @param cb
      */
     fetch(cb: () => void) {
+        const _this = this;
+        this.fetchFromCache().then( value => {
+            let cached = value;
 
-        //clear cache when expired
-        const cachedItem = this.cache.getValue(this.sdkKey);
-        if (cachedItem && cachedItem.isExpired()) {
-            this.cache.setValue(this.sdkKey, null);
-        }
+            if (cached && cached.isExpired()) {
+                cached = null;
+            }
 
-        if (!this.cache.getValue(this.sdkKey)) {
-            this.fetcher.fetchAll(this.sdkKey).then(apiResponse => {
-                this.logger.debug('Fetch all config on client initialization');
+            if (!cached) {
+                this.fetcher.fetchAll(this.sdkKey).then( apiResponse => {
+                    _this.logger.debug('Fetch all config on client initialization');
 
-                const cachedItem = new CachedItem(apiResponse, new Date(), this.options.ttl);
-                //fill cache
-                this.cache.setValue(this.sdkKey, cachedItem);
+                    const cachedItem = new CachedItem(apiResponse, new Date(), this.options.ttl);
 
-                this.logger.debug('Loaded config');
+                    _this.lastCachedItem = cachedItem;
 
-                cb();
-            });
-        } else {
-            this.logger.debug('Fetched from cache');
+                    //fill cache
+                    _this.cache.setValue(this.sdkKey, cachedItem);
+    
+                    _this.logger.debug('Loaded config');
+                    cb();
+                })
+            } else {
+                _this.logger.debug('Fetched from cache');
+                _this.lastCachedItem = cached;
+                cb(); 
+            }
+        }).catch( err => {
+            this.logger.error('Something went wrong: ' + err);
             cb();
-        }
+        });
+    } 
+
+
+    private fetchFromCache() : Promise<CachedItem> {
+        return new Promise( resolve => resolve(this.cache.getValue(this.sdkKey)));
     }
 
 
@@ -129,7 +144,7 @@ export class Client {
      *
      */
     toggleValue(name: string, defaultValue, context = {}) {
-        const cachedItem = this.cache.getValue(this.sdkKey);
+        const cachedItem = this.lastCachedItem;
         const { payload } = cachedItem ? cachedItem.item : { payload: null };
         // const { payload } = this.cache.getValue(this.sdkKey) || { lastModified: null, payload: null };
         return this.evaluator.evaluate(payload, name, context, defaultValue).value;
@@ -190,46 +205,45 @@ export class Client {
     }
 
     private doRefresh(cb: (keys: string[]) => void) {
-        const cachedItem = this.cache.getValue(this.sdkKey);
 
-        let lastModified = null;
-        let oldCacheResult = null;
-        if (cachedItem) { // && !cachedItem.isExpired()) {
-            lastModified = cachedItem.item.lastModified;
-            oldCacheResult = cachedItem.item.payload
-        }
+        const _this = this;
+        this.fetchFromCache().then(value => {
 
-        /*
+            const cachedItem = value;
 
-        const { lastModified, payload } = this.cache.getValue(this.sdkKey) || {
-            lastModified: null,
-            payload: null
-        };
-        const oldCacheResult = payload; */
-
-        this.fetcher.fetchAll(this.sdkKey, lastModified).then(result => {
-
-            //check also the lastModified value
-            if (result && result.lastModified !== lastModified) {
-
-                //get changed toggles
-                let changed = this.getChangedKeys(result, oldCacheResult);
-
-                const cachedItem = new CachedItem(result, new Date(), this.options.ttl);
-
-                //fill cache
-                this.cache.setValue(this.sdkKey, cachedItem);
-
-                cb(changed);
-            } else {
-                cb(null);
+            let lastModified = null;
+            let oldCacheResult = null;
+            if (cachedItem) { // && !cachedItem.isExpired()) {
+                lastModified = cachedItem.item.lastModified;
+                oldCacheResult = cachedItem.item.payload
             }
-        }).catch(err => {
-            this.logger.error(err);
-            this.logger.error(`Failed to load. Server sent ${err.status} ${err.text}`);
-            cb(null);
+
+            _this.fetcher.fetchAll(_this.sdkKey, lastModified).then(result => {
+
+                //check also the lastModified value
+                if (result && result.lastModified !== lastModified) {
+
+                    //get changed toggles
+                    let changed = _this.getChangedKeys(result, oldCacheResult);
+
+                    const cachedItem = new CachedItem(result, new Date(), _this.options.ttl);
+
+                    _this.lastCachedItem = cachedItem;
+
+                    //fill cache
+                    _this.cache.setValue(_this.sdkKey, cachedItem);
+
+                    cb(changed);
+                } else {
+                    cb(null);
+                }
+            }).catch(err => {
+                _this.logger.error(err);
+                _this.logger.error(`Failed to load. Server sent ${err.status} ${err.text}`);
+                cb(null);
+            });
         });
-    }
+    } 
 
     private getChangedKeys(result: ApiResponse, oldCacheResult: any) {
         if (oldCacheResult) {

@@ -22,7 +22,8 @@ const response1: ApiResponse = {
         name: "toggle1",
         status: "4",
         strategy: "3",
-        conditions: []
+        conditions: [],
+        value: true
     }]
 };
 
@@ -249,6 +250,7 @@ test('Test refreshAsync with changed keys', async () => {
             name: "toggle1",
             status: 1,
             strategy: "3",
+            value: true,
             conditions: []
         }]
     }
@@ -282,12 +284,12 @@ test('Test refreshAsync with changed keys', async () => {
     expect(keys1[0]).toEqual('toggle1');
     expect(cache.getValue(sdkKey).item.lastModified).toEqual("1");
 
+    expect(client.toggleValue('toggle1',false)).toBeTruthy();
     
     const keys2 = await client.refreshAsync();
     expect(myFetcher.fetchAll).toHaveBeenCalledTimes(2);
     expect(cache.getValue(sdkKey).item.lastModified).toEqual("2");
     expect(keys2[0]).toEqual('toggle1');
-
 });
 
 
@@ -363,4 +365,37 @@ test('Client variationId should return value for percentual rollout', async () =
     expect(variation2).toEqual("BucketB");
 
     expect(client.getVariationsIds()).toHaveLength(2);
+})
+
+test('Test async cache', async () => {
+   
+    const sdkKey = 'some_key'
+
+    let _cache = {};
+    let myAsyncMemoryCache = function () {}
+
+    myAsyncMemoryCache.prototype.setValue = async (key, value) => {
+        _cache[key] = value;
+    };
+
+    myAsyncMemoryCache.prototype.getValue = async (key) => {
+        return await _cache[key];
+    };
+
+
+    const client = new Client(
+        new Evaluator(Logger.createLogger("debug")),
+        new EventEmitter(),
+        new myAsyncMemoryCache(),
+        mockFetcher,
+        sdkKey, { autoRefresh: false }, 'debug');
+
+    await client.fetchAsync();
+
+    expect(client.isCacheFilled()).toBeTruthy();
+
+    const value = client.toggleValue('toggle1', false);
+
+    expect(value).toBeFalsy();
+
 })
