@@ -20,9 +20,7 @@ export class Client {
 
     sdkKey: string;
     options: Options
-
-    //TODO "lastCachedItem" for async cache
-
+    
     private lastCachedItem: CachedItem;
 
     constructor(
