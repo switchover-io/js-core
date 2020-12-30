@@ -16,12 +16,12 @@ export interface ResponseCache {
     getValue(key:string) : CachedItem;
 }
 
-
 export interface CachedItem {
-    item: ApiResponse, 
-    timestamp: Date, 
+    item: ApiResponse,
+    timestamp: Date,
     ttl?: number
 }
+
 export class DefaultCachedItem implements CachedItem {
     constructor(
         public item: ApiResponse, 
