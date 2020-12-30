@@ -3,7 +3,7 @@ import { Fetcher } from "./Fetcher";
 import { Options } from "./Options";
 import { Logger } from "./util/Logger";
 import { LogLevel } from "./util/LogLevel";
-import { CachedItem, ResponseCache } from './Cache';
+import { CachedItem, ResponseCache, isExpired, DefaultCachedItem } from './Cache';
 import { Evaluator } from "./Evaluator";
 import * as equal from 'fast-deep-equal';
 import { ApiResponse } from "./ApiResponse";
@@ -20,7 +20,7 @@ export class Client {
 
     sdkKey: string;
     options: Options
-    
+
     private lastCachedItem: CachedItem;
 
     constructor(
@@ -52,7 +52,7 @@ export class Client {
      * Indicates if cached is filled, e.g after first fetch
      */
     isCacheFilled() {
-        return this.lastCachedItem && this.lastCachedItem.item != null; // && !response.isExpired();
+        return this.lastCachedItem && this.lastCachedItem.item != null;
     }
 
 
@@ -66,7 +66,7 @@ export class Client {
         this.fetchFromCache().then( value => {
             let cached = value;
 
-            if (cached && cached.isExpired()) {
+            if (cached && isExpired(cached)) {
                 cached = null;
             }
 
@@ -74,7 +74,7 @@ export class Client {
                 this.fetcher.fetchAll(this.sdkKey).then( apiResponse => {
                     _this.logger.debug('Fetch all config on client initialization');
 
-                    const cachedItem = new CachedItem(apiResponse, new Date(), this.options.ttl);
+                    const cachedItem = new DefaultCachedItem(apiResponse, new Date(), this.options.ttl);
 
                     _this.lastCachedItem = cachedItem;
 
@@ -87,13 +87,13 @@ export class Client {
             } else {
                 _this.logger.debug('Fetched from cache');
                 _this.lastCachedItem = cached;
-                cb(); 
+                cb();
             }
         }).catch( err => {
             this.logger.error('Something went wrong: ' + err);
             cb();
         });
-    } 
+    }
 
 
     private fetchFromCache() : Promise<CachedItem> {
@@ -155,9 +155,9 @@ export class Client {
      * Note: Variation ids will be often used in combination with rollout options (percentual-rollout, a/b-split). You can use
      * the variation id to track user
      *
-     * @param name 
-     * @param defaultVariationId 
-     * @param context 
+     * @param name
+     * @param defaultVariationId
+     * @param context
      */
     getVariationId(name: string, defaultVariationId, context = {}) {
         const cachedItem = this.cache.getValue(this.sdkKey);
@@ -224,7 +224,7 @@ export class Client {
                     //get changed toggles
                     let changed = _this.getChangedKeys(result, oldCacheResult);
 
-                    const cachedItem = new CachedItem(result, new Date(), _this.options.ttl);
+                    const cachedItem = new DefaultCachedItem(result, new Date(), _this.options.ttl);
 
                     _this.lastCachedItem = cachedItem;
 
@@ -241,7 +241,7 @@ export class Client {
                 cb(null);
             });
         });
-    } 
+    }
 
     private getChangedKeys(result: ApiResponse, oldCacheResult: any) {
         if (oldCacheResult) {

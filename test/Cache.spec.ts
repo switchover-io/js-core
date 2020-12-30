@@ -1,4 +1,4 @@
-import { CachedItem, ResponseCache } from '../src/Cache';
+import { CachedItem, ResponseCache, isExpired, DefaultCachedItem } from '../src/Cache';
 import { MemoryCache } from '../src/MemoryCache';
 
 test('set and get cache', () => {
@@ -12,7 +12,7 @@ test('set and get cache', () => {
         }
     }
 
-    cache.setValue(key1, new CachedItem(apiRepsonse, new Date(), 2));
+    cache.setValue(key1, new DefaultCachedItem(apiRepsonse, new Date(), 2));
 
     const item = cache.getValue(key1).item;
 
@@ -31,15 +31,15 @@ test('test CacheItem isExpired', () => {
     }
 
     const dateNowBefore2Sec = new Date(Date.now() - 2000);
-    const cacheItem = new CachedItem(apiRepsonse, dateNowBefore2Sec, 3);
-    expect(cacheItem.isExpired()).toBeFalsy();
+    const cacheItem = new DefaultCachedItem(apiRepsonse, dateNowBefore2Sec, 3);
+    expect(isExpired(cacheItem)).toBeFalsy();
 
-    const expiredItem = new CachedItem(apiRepsonse, dateNowBefore2Sec, 2);
-    expect(expiredItem.isExpired()).toBeTruthy();
+    const expiredItem = new DefaultCachedItem(apiRepsonse, dateNowBefore2Sec, 2);
+    expect(isExpired(expiredItem)).toBeTruthy();
 
-    const neverExpired = new CachedItem(apiRepsonse, new Date(Date.now() - 10000), null);
-    expect(neverExpired.isExpired()).toBeFalsy();
+    const neverExpired = new DefaultCachedItem(apiRepsonse, new Date(Date.now() - 10000), null);
+    expect(isExpired(neverExpired)).toBeFalsy();
 
-    const neverExpired2 = new CachedItem(apiRepsonse, new Date(Date.now() - 1000), 0);
-    expect(neverExpired2.isExpired()).toBeFalsy();
+    const neverExpired2 = new DefaultCachedItem(apiRepsonse, new Date(Date.now() - 1000), 0);
+    expect(isExpired(neverExpired2)).toBeFalsy();
 });

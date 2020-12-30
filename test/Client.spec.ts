@@ -2,7 +2,7 @@ import { Client } from '../src/Client';
 import { Evaluator } from '../src/Evaluator';
 import { EventEmitter } from '../src/Emitter';
 import { MemoryCache } from '../src/MemoryCache';
-import { ResponseCache } from '../src/Cache';
+import { isExpired, ResponseCache } from '../src/Cache';
 import { Fetcher } from '../src/Fetcher';
 import { mocked } from 'ts-jest/utils'
 import { ApiResponse } from '../src/ApiResponse';
@@ -87,7 +87,7 @@ test('Test fetch with ttl 2sec', done => {
     });
 
     setTimeout(() => {
-        expect(cache.getValue(sdkKey).isExpired()).toBeTruthy();
+        expect( isExpired(cache.getValue(sdkKey))).toBeTruthy();
         //fetch again
         client.fetch(() => {
             expect(mockFetcher.fetchAll).toBeCalledTimes(2);
