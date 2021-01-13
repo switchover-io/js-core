@@ -399,3 +399,25 @@ test('Test async cache', async () => {
     expect(value).toBeFalsy();
 
 })
+
+test('Test fetch with error', async () => {
+
+    const sdkKey = 'some_key'
+
+    const errFetcher = {
+        fetchAll: jest.fn()
+    }
+
+    errFetcher.fetchAll.mockImplementationOnce(() => Promise.reject('error'));
+
+    const client = new Client(
+        new Evaluator(Logger.createLogger("debug")),
+        new EventEmitter(),
+        new MemoryCache(),
+        errFetcher,
+        sdkKey, { autoRefresh: false }, 'debug');
+
+    await client.fetchAsync();
+
+    expect(client.toggleValue('feature', false)).toBeFalsy();
+});
