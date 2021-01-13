@@ -83,7 +83,11 @@ export class Client {
     
                     _this.logger.debug('Loaded config');
                     cb();
-                })
+                }).catch(err => {
+                    _this.logger.error(err);
+                    _this.logger.error(`Failed to load. Server sent ${err.status} ${err.text}`);
+                    cb();
+                });
             } else {
                 _this.logger.debug('Fetched from cache');
                 _this.lastCachedItem = cached;
